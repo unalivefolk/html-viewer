@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Artifact Lens — Minimalist HTML Viewer</title>
+  <title>Pemutar HTML</title>
   <!-- Memuat Tailwind CSS untuk tata letak responsif dan estetika gelap minimalis -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Memuat font Inter -->
@@ -42,6 +42,63 @@
       font-family: 'Inter', system-ui, -apple-system, sans-serif;
       -webkit-tap-highlight-color: transparent;
       user-select: none;
+    }
+
+    /* Tampilan awal minimalis & stage pemutar tanpa tombol */
+    #home-drop-screen {
+      position: fixed;
+      inset: 0;
+      z-index: 35;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      background: #090b10;
+    }
+
+    #home-drop-screen[hidden] {
+      display: none !important;
+    }
+
+    .home-drop-card {
+      width: min(520px, 100%);
+      box-sizing: border-box;
+      border: 1.5px dashed rgba(148, 163, 184, 0.35);
+      border-radius: 16px;
+      padding: 40px 26px;
+      text-align: center;
+      background: rgba(17, 21, 31, 0.85);
+      transition: border-color 0.15s ease, background-color 0.15s ease;
+    }
+
+    #home-drop-screen.is-dragover .home-drop-card {
+      border-color: #38bdf8;
+      background: rgba(56, 189, 248, 0.08);
+    }
+
+    /* Mode layar penuh CSS fallback bila Fullscreen API diblokir sandbox/iframe */
+    html.is-fullscreen,
+    body.is-fullscreen,
+    .is-fullscreen {
+      position: fixed !important;
+      inset: 0 !important;
+      width: 100vw !important;
+      height: 100vh !important;
+      max-width: 100vw !important;
+      max-height: 100vh !important;
+      z-index: 9999 !important;
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+
+    /* Mode bersih tanpa tombol: sembunyikan seluruh kontrol/HUD */
+    body.clean-view #top-hud,
+    body.clean-view #bottom-nav-bar,
+    body.clean-view #minimal-floating-bar,
+    body.clean-view #artifact-drawer,
+    body.clean-view #drawer-backdrop,
+    body.clean-view #paste-modal {
+      display: none !important;
     }
 
     /* Scrollbar tipis untuk daftar artefak */
@@ -98,7 +155,7 @@
     /* Transformasi zoom pada wrapper iframe */
     #artifact-zoom-stage {
       transform-origin: center center;
-      transition: transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1);
+      transition: transform 0.16s cubic-bezier(0.2, 0.8, 0.2, 1);
       will-change: transform;
     }
 
@@ -114,15 +171,53 @@
   <!-- ===================================================================== -->
   <main id="viewer-root" class="relative w-full h-full flex flex-col overflow-hidden bg-obsidian">
 
+    <!-- Layar Awal Minimalis: Pilih File, Drag-and-Drop, atau Tempel Kode -->
+    <section id="home-drop-screen" hidden aria-label="Pemilih File Artefak">
+      <div class="home-drop-card">
+        <h2 class="text-2xl font-semibold tracking-tight text-white mb-1.5">Pemutar HTML</h2>
+        <p class="text-sm text-slate-400 mb-5">Seret file .html / .svg ke sini, pilih file, atau tempel kodenya (Ctrl+V).</p>
+        <div class="flex flex-wrap items-center justify-center gap-2.5">
+          <button
+            id="home-pick-file-btn"
+            type="button"
+            class="px-5 py-2.5 rounded-full bg-slate-100 hover:bg-white text-slate-950 text-xs sm:text-sm font-semibold transition cursor-pointer"
+          >
+            Pilih file
+          </button>
+          <button
+            id="home-paste-code-btn"
+            type="button"
+            class="px-4 py-2.5 rounded-full bg-elevated hover:bg-white/10 text-slate-200 border border-white/15 text-xs sm:text-sm font-medium transition cursor-pointer"
+          >
+            Tempel kode
+          </button>
+          <button
+            id="home-load-samples-btn"
+            type="button"
+            class="px-4 py-2.5 rounded-full bg-sky-500/15 hover:bg-sky-500/25 text-sky-300 border border-sky-400/30 text-xs sm:text-sm font-medium transition cursor-pointer"
+          >
+            Contoh artefak
+          </button>
+        </div>
+        <div class="mt-7 mx-auto max-w-[420px] text-left text-xs text-slate-400 leading-relaxed space-y-1">
+          <div><b class="text-slate-200 font-semibold">Geser kiri / kanan</b> maju / mundur</div>
+          <div><b class="text-slate-200 font-semibold">Ketuk 2 jari</b> putar / jeda &nbsp;·&nbsp; <b class="text-slate-200 font-semibold">3 jari</b> buka file</div>
+          <div><b class="text-slate-200 font-semibold">Cubit / Ctrl+Scroll</b> zoom</div>
+          <div><b class="text-slate-200 font-semibold">← →</b> maju / mundur &nbsp; <b class="text-slate-200 font-semibold">Space / K</b> putar / jeda &nbsp; <b class="text-slate-200 font-semibold">F</b> layar penuh</div>
+          <div><b class="text-slate-200 font-semibold">+ − 0</b> zoom &nbsp; <b class="text-slate-200 font-semibold">R</b> muat ulang &nbsp; <b class="text-slate-200 font-semibold">O</b> buka &nbsp; <b class="text-slate-200 font-semibold">[ ]</b> file lain</div>
+        </div>
+      </div>
+    </section>
+
     <!-- Top HUD Minimalis (dapat disembunyikan penuh dengan H / Esc / Mode Bersih) -->
-    <header id="top-hud" class="z-30 flex items-center justify-between gap-2 px-3 py-2.5 sm:px-5 bg-surface/85 backdrop-blur-md border-b border-white/10 transition-all duration-300">
+    <header id="top-hud" class="z-30 flex items-center justify-between gap-2 px-3 py-2.5 sm:px-5 bg-surface/90 backdrop-blur-md border-b border-white/10 transition-all duration-200">
       <!-- Kiri: Daftar Artefak & Judul Aktif -->
       <div class="flex items-center gap-2 min-w-0">
         <button
-          id="btn-toggle-drawer"
+          id="btnList"
           type="button"
           title="Daftar Artefak (L)"
-          class="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-elevated hover:bg-white/10 active:scale-95 text-xs sm:text-sm font-medium text-slate-200 border border-white/10 transition"
+          class="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-elevated hover:bg-white/10 active:scale-95 text-xs sm:text-sm font-medium text-slate-200 border border-white/10 transition cursor-pointer"
         >
           <!-- Ikon daftar -->
           <svg class="w-4 h-4 text-sky-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -142,33 +237,33 @@
         </div>
       </div>
 
-      <!-- Kanan: Kontrol Zoom, Reload, Autoplay, Mode Gestur, Upload & Fullscreen -->
+      <!-- Kanan: Kontrol Zoom, Reload, Play/Pause, Mode Gestur, Upload, Paste, Bersih & Fullscreen -->
       <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
-        <!-- Kontrol Zoom -->
-        <div class="hidden sm:flex items-center rounded-xl bg-elevated border border-white/10 overflow-hidden">
+        <!-- Kontrol Zoom (langkah 10%, 50% - 250%) -->
+        <div class="flex items-center rounded-xl bg-elevated border border-white/10 overflow-hidden">
           <button
-            id="btn-zoom-out"
+            id="btnZoomOut"
             type="button"
-            title="Perkecil (-)"
-            class="p-2 hover:bg-white/10 active:bg-white/15 text-slate-300 transition"
+            title="Perkecil Zoom (-)"
+            class="p-2 hover:bg-white/10 active:bg-white/15 text-slate-300 transition cursor-pointer"
           >
             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" d="M20 12H4" />
             </svg>
           </button>
           <button
-            id="btn-zoom-reset"
+            id="btnZoomReset"
             type="button"
-            title="Reset Zoom (0)"
-            class="px-2 py-1.5 text-[11px] font-medium text-slate-200 hover:bg-white/10 transition min-w-[46px] text-center"
+            title="Reset Zoom ke 100% (0)"
+            class="px-2 py-1.5 text-[11px] font-semibold text-slate-200 hover:bg-white/10 transition min-w-[46px] text-center cursor-pointer"
           >
             100%
           </button>
           <button
-            id="btn-zoom-in"
+            id="btnZoomIn"
             type="button"
-            title="Perbesar (+)"
-            class="p-2 hover:bg-white/10 active:bg-white/15 text-slate-300 transition"
+            title="Perbesar Zoom (+)"
+            class="p-2 hover:bg-white/10 active:bg-white/15 text-slate-300 transition cursor-pointer"
           >
             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
@@ -178,10 +273,10 @@
 
         <!-- Reload Artefak -->
         <button
-          id="btn-reload"
+          id="btnReload"
           type="button"
           title="Muat Ulang Artefak (R)"
-          class="p-2 sm:px-2.5 sm:py-2 rounded-xl bg-elevated hover:bg-white/10 active:scale-95 text-slate-200 border border-white/10 transition inline-flex items-center gap-1.5 text-xs font-medium"
+          class="p-2 sm:px-2.5 sm:py-2 rounded-xl bg-elevated hover:bg-white/10 active:scale-95 text-slate-200 border border-white/10 transition inline-flex items-center gap-1.5 text-xs font-medium cursor-pointer"
         >
           <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -189,12 +284,12 @@
           <span class="hidden lg:inline">Reload</span>
         </button>
 
-        <!-- Play / Pause Slideshow Otomatis -->
+        <!-- Play / Pause Auto-Advance Artefak -->
         <button
-          id="btn-autoplay"
+          id="btnPlay"
           type="button"
-          title="Play / Pause Otomatis (Space / Ketuk 2 Jari)"
-          class="p-2 sm:px-2.5 sm:py-2 rounded-xl bg-elevated hover:bg-white/10 active:scale-95 text-slate-200 border border-white/10 transition inline-flex items-center gap-1.5 text-xs font-medium"
+          title="Play / Pause Auto-Advance (Space / Ketuk 2 Jari)"
+          class="p-2 sm:px-2.5 sm:py-2 rounded-xl bg-elevated hover:bg-white/10 active:scale-95 text-slate-200 border border-white/10 transition inline-flex items-center gap-1.5 text-xs font-medium cursor-pointer"
         >
           <svg id="icon-play" class="w-4 h-4 text-amber-400" fill="currentColor" viewBox="0 0 24 24">
             <path d="M8 5v14l11-7z" />
@@ -202,15 +297,15 @@
           <svg id="icon-pause" class="w-4 h-4 text-amber-400 hidden" fill="currentColor" viewBox="0 0 24 24">
             <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
           </svg>
-          <span id="label-autoplay" class="hidden lg:inline">Auto</span>
+          <span id="label-autoplay" class="hidden lg:inline">Play</span>
         </button>
 
         <!-- Toggle Overlay Gestur Sentuh -->
         <button
-          id="btn-gesture-mode"
+          id="btnGesture"
           type="button"
-          title="Mode Gestur Sentuh (Geser Kiri/Kanan & Ketuk 2 Jari)"
-          class="p-2 sm:px-2.5 sm:py-2 rounded-xl bg-elevated hover:bg-white/10 active:scale-95 text-slate-200 border border-white/10 transition inline-flex items-center gap-1.5 text-xs font-medium"
+          title="Mode Gestur Sentuh (G: Geser Kiri/Kanan & Ketuk 2 Jari)"
+          class="p-2 sm:px-2.5 sm:py-2 rounded-xl bg-elevated hover:bg-white/10 active:scale-95 text-slate-200 border border-white/10 transition inline-flex items-center gap-1.5 text-xs font-medium cursor-pointer"
         >
           <svg class="w-4 h-4 text-violet-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M7 11.5V6a1.5 1.5 0 113 0v4.5m0 0V4.5a1.5 1.5 0 113 0V11m0 0V6.5a1.5 1.5 0 113 0v5.5m0 0a1.5 1.5 0 013 0V15a6 6 0 01-6 6h-1.5A6.5 6.5 0 017 14.5v-3z" />
@@ -218,12 +313,25 @@
           <span id="label-gesture" class="hidden xl:inline">Gestur: Off</span>
         </button>
 
+        <!-- Paste / Tambah Kode HTML AI -->
+        <button
+          id="btnPaste"
+          type="button"
+          title="Tempel Kode HTML dari Claude / AI"
+          class="p-2 sm:px-2.5 sm:py-2 rounded-xl bg-elevated hover:bg-white/10 active:scale-95 text-slate-200 border border-white/10 transition inline-flex items-center gap-1.5 text-xs font-medium cursor-pointer"
+        >
+          <svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+          </svg>
+          <span class="hidden lg:inline">Paste</span>
+        </button>
+
         <!-- Upload File HTML/HTM/SVG -->
         <button
-          id="btn-upload"
+          id="btnUpload"
           type="button"
           title="Unggah File HTML / HTM / SVG"
-          class="p-2 sm:px-3 sm:py-2 rounded-xl bg-sky-500 hover:bg-sky-400 active:scale-95 text-slate-950 font-semibold transition inline-flex items-center gap-1.5 text-xs shadow-sm shadow-sky-500/20"
+          class="p-2 sm:px-3 sm:py-2 rounded-xl bg-sky-500 hover:bg-sky-400 active:scale-95 text-slate-950 font-semibold transition inline-flex items-center gap-1.5 text-xs shadow-sm shadow-sky-500/20 cursor-pointer"
         >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
@@ -232,235 +340,311 @@
         </button>
         <input id="file-input" type="file" accept=".html,.htm,.svg,text/html,image/svg+xml" multiple class="hidden" />
 
-        <!-- Sembunyikan HUD / Mode Bersih Tanpa Tombol -->
-        <button
-          id="btn-hide-hud"
-          type="button"
-          title="Mode Bersih Tanpa Tombol (H / Esc)"
-          class="p-2 rounded-xl bg-elevated hover:bg-white/10 active:scale-95 text-slate-300 border border-white/10 transition"
-        >
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
-          </svg>
-        </button>
+        <!-- ------------------------------------------------------------------- -->
+        <!-- E. KOMPATIBILITAS ARTEFAK HTML / SVG & RENDER IFRAME                -->
+        <!-- ------------------------------------------------------------------- -->
+        function injectedArtifactBridge() {
+          var pausedFlag = false;
+          var rafQueue = [];
+          var pausedAt = 0;
+          var offsetMs = 0;
+          var pausedAnimations = [];
+          var pausedMedia = [];
+          var touchState = null;
+          var pinchState = null;
 
-        <!-- Fullscreen Toggle -->
-        <button
-          id="btn-fullscreen"
-          type="button"
-          title="Layar Penuh / Fullscreen (F)"
-          class="p-2 rounded-xl bg-elevated hover:bg-white/10 active:scale-95 text-slate-300 border border-white/10 transition"
-        >
-          <svg id="icon-fs-enter" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
-          </svg>
-          <svg id="icon-fs-exit" class="w-4 h-4 hidden" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M9 9V4.5M9 9H4.5M9 9L3.75 3.75M9 15v4.5M9 15H4.5M9 15l-5.25 5.25M15 9h4.5M15 9V4.5M15 9l5.25-5.25M15 15h4.5M15 15v4.5m0-4.5l5.25 5.25" />
-          </svg>
-        </button>
-      </div>
-    </header>
+          var nativeRaf = window.requestAnimationFrame.bind(window);
+          var nativePerfNow = performance.now.bind(performance);
 
-    <!-- ===================================================================== -->
-    <!-- 2. KANVAS TAMPILAN ARTEFAK (IFRAME SANDBOX + ZOOM)                   -->
-    <!-- ===================================================================== -->
-    <div id="canvas-viewport" class="relative flex-1 w-full h-full overflow-hidden flex items-center justify-center bg-[#07090e]">
-      <!-- Wrapper Zoom -->
-      <div id="artifact-zoom-stage" class="w-full h-full flex items-center justify-center">
-        <iframe
-          id="artifact-frame"
-          title="Pratinjau Artefak HTML"
-          sandbox="allow-scripts allow-modals allow-forms allow-popups allow-pointer-lock allow-downloads"
-          class="w-full h-full border-0 bg-white"
-        ></iframe>
-      </div>
+          function postToHost(payload) {
+            try {
+              parent.postMessage({ __pl: 1, m: payload }, '*');
+            } catch (e) {}
+          }
 
-      <!-- Overlay Gestur Transparan (Geser Kiri/Kanan & Ketuk 2 Jari tanpa bentrok dengan iframe) -->
-      <div
-        id="gesture-overlay"
-        class="hidden absolute inset-0 z-20 cursor-grab active:cursor-grabbing bg-transparent"
-        aria-hidden="true"
-      >
-        <!-- Petunjuk halus saat mode gestur aktif -->
-        <div class="pointer-events-none absolute top-4 left-1/2 -translate-x-1/2 px-3.5 py-1.5 rounded-full bg-surface/80 backdrop-blur-md border border-violet-400/30 text-[11px] text-violet-200 flex items-center gap-2 shadow-lg">
-          <span class="w-2 h-2 rounded-full bg-violet-400 animate-pulse"></span>
-          <span>Mode Gestur Aktif: Geser Kiri/Kanan • Ketuk 2 Jari (Play/Pause)</span>
-        </div>
-      </div>
+          try {
+            performance.now = function () {
+              return (pausedFlag ? pausedAt : nativePerfNow()) - offsetMs;
+            };
+          } catch (e) {}
 
-      <!-- Indikator Visual Aksi Cepat (Swipe / Play / Pause / Zoom / Reload) -->
-      <div id="center-action-indicator" class="pointer-events-none hidden fixed inset-0 z-40 flex items-center justify-center">
-        <div id="center-action-pill" class="action-badge-anim px-5 py-3 rounded-2xl bg-surface/90 backdrop-blur-xl border border-white/15 shadow-2xl flex items-center gap-3 text-sm font-semibold text-white">
-          <span id="center-action-icon" class="text-sky-400"></span>
-          <span id="center-action-text">Aksi</span>
-        </div>
-      </div>
+          window.requestAnimationFrame = function (cb) {
+            return nativeRaf(function (ts) {
+              if (pausedFlag) {
+                rafQueue.push(cb);
+              } else {
+                cb(ts - offsetMs);
+              }
+            });
+          };
 
-      <!-- Floating Bottom Pill Minimalis (muncul ketika HUD disembunyikan agar tetap bisa navigasi/kembali bila perlu) -->
-      <div id="minimal-floating-bar" class="hidden fixed bottom-4 left-1/2 -translate-x-1/2 z-30 flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-surface/75 hover:bg-surface/95 backdrop-blur-md border border-white/10 shadow-xl opacity-35 hover:opacity-100 transition-opacity duration-300">
-        <button id="mini-prev" type="button" title="Sebelumnya (ArrowLeft)" class="p-2 rounded-full hover:bg-white/10 text-slate-200 transition">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
-          </svg>
-        </button>
-        <button id="mini-toggle-hud" type="button" title="Tampilkan HUD (H / Esc)" class="px-3 py-1 rounded-full hover:bg-white/10 text-[11px] font-medium text-slate-300 transition">
-          Tampilkan HUD
-        </button>
-        <button id="mini-next" type="button" title="Berikutnya (ArrowRight)" class="p-2 rounded-full hover:bg-white/10 text-slate-200 transition">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
-          </svg>
-        </button>
-      </div>
-    </div>
+          function pauseArtifactRuntime() {
+            if (pausedFlag) return;
+            pausedFlag = true;
+            pausedAt = nativePerfNow();
+            pausedAnimations = [];
+            try {
+              document.getAnimations().forEach(function (anim) {
+                if (anim.playState === 'running') {
+                  anim.pause();
+                  pausedAnimations.push(anim);
+                }
+              });
+            } catch (e) {}
+            pausedMedia = [];
+            document.querySelectorAll('video, audio').forEach(function (mediaEl) {
+              if (!mediaEl.paused) {
+                mediaEl.pause();
+                pausedMedia.push(mediaEl);
+              }
+            });
+          }
 
-    <!-- ===================================================================== -->
-    <!-- 3. DRAWER DAFTAR ARTEFAK & SHORTCUT CHEAT SHEET                      -->
-    <!-- ===================================================================== -->
-    <aside id="artifact-drawer" class="fixed inset-y-0 left-0 z-40 w-80 max-w-[88vw] bg-surface/95 backdrop-blur-xl border-r border-white/10 shadow-2xl transform -translate-x-full transition-transform duration-300 flex flex-col">
-      <div class="p-4 border-b border-white/10 flex items-center justify-between">
-        <div>
-          <h2 class="text-sm font-semibold text-white">Daftar Artefak</h2>
-          <p class="text-[11px] text-slate-400">Klik item untuk menampilkan atau unggah file baru</p>
-        </div>
-        <button id="btn-close-drawer" type="button" class="p-1.5 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
-      </div>
+          function resumeArtifactRuntime() {
+            if (!pausedFlag) return;
+            offsetMs += nativePerfNow() - pausedAt;
+            pausedFlag = false;
+            pausedAnimations.forEach(function (anim) {
+              try {
+                anim.play();
+              } catch (e) {}
+            });
+            pausedMedia.forEach(function (mediaEl) {
+              mediaEl.play().catch(function () {});
+            });
+            rafQueue.splice(0).forEach(function (cb) {
+              nativeRaf(function (ts) {
+                cb(ts - offsetMs);
+              });
+            });
+          }
 
-      <!-- Tombol Tambah Artefak & Reset Contoh -->
-      <div class="p-3 border-b border-white/10 grid grid-cols-2 gap-2">
-        <button id="drawer-upload-btn" type="button" class="px-3 py-2 rounded-xl bg-sky-500/15 hover:bg-sky-500/25 text-sky-300 border border-sky-400/25 text-xs font-medium transition text-center">
-          + Tambah File
-        </button>
-        <button id="drawer-restore-samples-btn" type="button" class="px-3 py-2 rounded-xl bg-elevated hover:bg-white/10 text-slate-300 border border-white/10 text-xs font-medium transition text-center">
-          Contoh Bawaan
-        </button>
-      </div>
+          function dispatchArrowKey(keyName) {
+            var codeMap = { ArrowRight: 39, ArrowLeft: 37 };
+            var kc = codeMap[keyName];
+            var targetEl = document.activeElement || document;
+            var downEv = new KeyboardEvent('keydown', { key: keyName, code: keyName, bubbles: true, cancelable: true });
+            Object.defineProperty(downEv, 'keyCode', { get: function () { return kc; } });
+            Object.defineProperty(downEv, 'which', { get: function () { return kc; } });
+            targetEl.dispatchEvent(downEv);
+            var upEv = new KeyboardEvent('keyup', { key: keyName, code: keyName, bubbles: true });
+            targetEl.dispatchEvent(upEv);
+          }
 
-      <!-- List Artefak -->
-      <div id="artifact-list" class="flex-1 overflow-y-auto p-2.5 space-y-1.5">
-        <!-- Diisi dinamis lewat JavaScript -->
-      </div>
+          addEventListener('message', function (ev) {
+            var data = ev.data;
+            if (!data || !data.__pl) return;
+            if (data.c === 'p') pauseArtifactRuntime();
+            else if (data.c === 'r') resumeArtifactRuntime();
+            else if (data.c === 'k') dispatchArrowKey(data.k);
+          });
 
-      <!-- Panduan Singkat Keyboard & Gestur -->
-      <div class="p-3.5 border-t border-white/10 bg-obsidian/50 text-[11px] text-slate-400 space-y-1.5">
-        <div class="font-semibold text-slate-300 mb-1">Pintasan & Gestur</div>
-        <div class="flex justify-between"><span>Mundur / Maju</span><span class="text-slate-200 font-mono">← / → atau Geser</span></div>
-        <div class="flex justify-between"><span>Play / Pause Auto</span><span class="text-slate-200 font-mono">Space / 2-Jari</span></div>
-        <div class="flex justify-between"><span>Zoom & Reset</span><span class="text-slate-200 font-mono">+ / - / 0</span></div>
-        <div class="flex justify-between"><span>Reload Artefak</span><span class="text-slate-200 font-mono">R</span></div>
-        <div class="flex justify-between"><span>Fullscreen / HUD</span><span class="text-slate-200 font-mono">F / H / Esc</span></div>
-      </div>
-    </aside>
+          // Polyfill penyimpanan untuk artefak AI (window.storage & localStorage/sessionStorage)
+          function createMemoryStorage() {
+            var store = {};
+            return {
+              getItem: function (k) { return k in store ? store[k] : null; },
+              setItem: function (k, v) { store[k] = String(v); },
+              removeItem: function (k) { delete store[k]; },
+              clear: function () { store = {}; },
+              key: function (i) { return Object.keys(store)[i] || null; },
+              get length() { return Object.keys(store).length; }
+            };
+          }
 
-    <!-- Backdrop Drawer -->
-    <div id="drawer-backdrop" class="hidden fixed inset-0 z-30 bg-black/60 backdrop-blur-xs transition-opacity"></div>
+          ['localStorage', 'sessionStorage'].forEach(function (storageName) {
+            try {
+              Object.defineProperty(window, storageName, { value: createMemoryStorage(), configurable: true });
+            } catch (e) {}
+          });
 
-    <!-- ===================================================================== -->
-    <!-- 4. OVERLAY DRAG-AND-DROP FILE                                         -->
-    <!-- ===================================================================== -->
-    <div id="dropzone-overlay" class="hidden fixed inset-0 z-50 bg-obsidian/90 backdrop-blur-md flex items-center justify-center p-6 pointer-events-none">
-      <div class="w-full max-w-md rounded-3xl border-2 border-dashed border-sky-400/70 bg-surface/90 p-8 text-center shadow-2xl">
-        <div class="w-14 h-14 mx-auto mb-4 rounded-2xl bg-sky-500/15 border border-sky-400/30 flex items-center justify-center text-sky-400">
-          <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-          </svg>
-        </div>
-        <h3 class="text-base font-semibold text-white mb-1">Lepaskan File Artefak di Sini</h3>
-        <p class="text-xs text-slate-400">Mendukung unggahan multi-file berformat <span class="text-sky-300 font-medium">.html</span>, <span class="text-sky-300 font-medium">.htm</span>, dan <span class="text-sky-300 font-medium">.svg</span>.</p>
-      </div>
-    </div>
+          var aiStore = {};
+          if (!window.storage) {
+            window.storage = {
+              get: async function (k) {
+                if (!(k in aiStore)) throw new Error('Key not found');
+                return { key: k, value: aiStore[k], shared: false };
+              },
+              set: async function (k, v) {
+                aiStore[k] = v;
+                return { key: k, value: v, shared: false };
+              },
+              delete: async function (k) {
+                var existed = k in aiStore;
+                delete aiStore[k];
+                return { key: k, deleted: existed, shared: false };
+              },
+              list: async function (prefix) {
+                return {
+                  keys: Object.keys(aiStore).filter(function (k) {
+                    return !prefix || k.indexOf(prefix) === 0;
+                  }),
+                  prefix: prefix,
+                  shared: false
+                };
+              }
+            };
+          }
 
-    <!-- ===================================================================== -->
-    <!-- 5. TOAST NOTIFIKASI HALUS (OTOMATIS MENGHILANG)                      -->
-    <!-- ===================================================================== -->
-    <div id="toast-container" class="pointer-events-none fixed bottom-16 right-4 z-50 flex flex-col items-end gap-2"></div>
+          function touchDistance(ev) {
+            var a = ev.touches[0];
+            var b = ev.touches[1];
+            return Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+          }
 
-  </main>
+          addEventListener('touchstart', function (ev) {
+            var count = ev.touches.length;
+            if (!touchState || count > touchState.n) {
+              touchState = {
+                n: count,
+                t: touchState ? touchState.t : Date.now(),
+                x: ev.touches[0].clientX,
+                y: ev.touches[0].clientY,
+                mv: touchState ? touchState.mv : 0,
+                dx: 0,
+                dy: 0
+              };
+            }
+            if (count === 2) {
+              pinchState = { d: touchDistance(ev) };
+            }
+          }, { passive: true });
 
-  <!-- ======================================================================= -->
-  <!-- 6. LOGIKA APLIKASI UTAMA                                               -->
-  <!-- ======================================================================= -->
-  <script>
-    (function () {
-      'use strict';
+          addEventListener('touchmove', function (ev) {
+            if (!touchState) return;
+            var first = ev.touches[0];
+            touchState.dx = first.clientX - touchState.x;
+            touchState.dy = first.clientY - touchState.y;
+            if (Math.abs(touchState.dx) + Math.abs(touchState.dy) > 14) {
+              touchState.mv = 1;
+            }
+            if (ev.touches.length === 2 && pinchState) {
+              var ratio = touchDistance(ev) / pinchState.d;
+              if (Math.abs(ratio - 1) > 0.08) {
+                touchState.mv = 1;
+                postToHost({ zr: ratio });
+              }
+            }
+          }, { passive: true });
 
-      // ---------------------------------------------------------------------
-      // A. CONTOH ARTEFAK BAWAAN (Kompatibel dengan artefak HTML AI)
-      // ---------------------------------------------------------------------
-      const SAMPLE_ARTIFACTS = [
-        {
-          id: 'sample-particle-lab',
-          title: 'Interactive Particle Field (Canvas)',
-          source: 'Contoh Bawaan • Canvas 2D',
-          html: `<!DOCTYPE html>
+          addEventListener('touchend', function (ev) {
+            if (!touchState || ev.touches.length) return;
+            var elapsed = Date.now() - touchState.t;
+            if (pinchState) {
+              postToHost({ ze: 1 });
+              pinchState = null;
+            }
+            if (!touchState.mv && elapsed < 350 && touchState.n >= 2) {
+              postToHost({ tap: touchState.n });
+            } else if (
+              touchState.n === 1 &&
+              elapsed < 700 &&
+              Math.abs(touchState.dx) > 60 &&
+              Math.abs(touchState.dx) > Math.abs(touchState.dy) * 1.5
+            ) {
+              postToHost({ sw: touchState.dx < 0 ? 1 : -1 });
+            }
+            touchState = null;
+          }, { passive: true });
+
+          addEventListener('touchcancel', function () {
+            touchState = null;
+            pinchState = null;
+          }, { passive: true });
+
+          var hotkeys = 'fFkKrRoO+=-_0[]hHgGlL ';
+          addEventListener('keydown', function (ev) {
+            if (ev.ctrlKey || ev.metaKey || ev.altKey) return;
+            var tgt = ev.target;
+            if (tgt && (/^(INPUT|TEXTAREA|SELECT)$/.test(tgt.tagName) || tgt.isContentEditable)) return;
+            if (ev.key.length === 1 && hotkeys.indexOf(ev.key) > -1) {
+              postToHost({ k: ev.key });
+            }
+          });
+
+          addEventListener('wheel', function (ev) {
+            if (ev.ctrlKey) {
+              ev.preventDefault();
+              postToHost({ zw: ev.deltaY });
+            }
+          }, { passive: false });
+        }
+
+        var INJECT_TAG = '<script>(' + injectedArtifactBridge.toString() + ')()<\/script>';
+
+        function normalizeArtifactHtml(rawContent, title = 'Artifact', reloadNonce = 0) {
+          const trimmed = (rawContent || '').trim();
+          const nonceComment = `<!-- reload:${reloadNonce} -->`;
+
+          if (!trimmed) {
+            return `<!DOCTYPE html><html><body style="font-family:sans-serif;padding:24px;color:#334155;">Artefak kosong. ${nonceComment}</body></html>`;
+          }
+
+          let doc = trimmed;
+          if (/^<svg[\s>]/i.test(trimmed) || trimmed.startsWith('<?xml')) {
+            doc = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <script src="https://cdn.tailwindcss.com"><\/script>
+  <title>${escapeHtml(title)}</title>
   <style>
-    body { margin: 0; overflow: hidden; background: #070b14; color: #f8fafc; font-family: system-ui, sans-serif; }
-    canvas { display: block; width: 100vw; height: 100vh; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #0b0f19;
+      overflow: auto;
+    }
+    svg {
+      max-width: 100%;
+      max-height: 100%;
+      width: auto;
+      height: auto;
+    }
   </style>
 </head>
-<body>
-  <div class="fixed top-4 left-4 z-10 bg-slate-900/75 backdrop-blur border border-white/10 rounded-2xl px-4 py-3 max-w-xs">
-    <div class="text-xs uppercase tracking-wider text-sky-400 font-semibold">AI Artifact Demo #1</div>
-    <h1 class="text-base font-bold mt-0.5">Harmonic Particle Field</h1>
-    <p class="text-xs text-slate-300 mt-1">Gerakkan kursor atau sentuh layar untuk membelokkan partikel. Klik untuk ledakan kecil.</p>
-    <button id="burstBtn" class="mt-2.5 px-3 py-1.5 rounded-lg bg-sky-500 hover:bg-sky-400 text-slate-950 text-xs font-semibold transition">Pulse Wave</button>
-  </div>
-  <canvas id="c"></canvas>
-  <script>
-    const canvas = document.getElementById('c');
-    const ctx = canvas.getContext('2d');
-    let w, h, particles = [];
-    const pointer = { x: -9999, y: -9999, active: false };
-    let pulse = 0;
+<body>${trimmed}</body>
+</html>`;
+          } else if (!/<!doctype\s+html/i.test(trimmed) && !/<html[\s>]/i.test(trimmed)) {
+            doc = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>${escapeHtml(title)}</title>
+  <script src="https://cdn.tailwindcss.com"><\/script>
+</head>
+<body class="bg-white text-slate-900 antialiased">
+${trimmed}
+</body>
+</html>`;
+          }
 
-    function resize() {
-      w = canvas.width = window.innerWidth;
-      h = canvas.height = window.innerHeight;
-    }
+          let injectSnippet = INJECT_TAG;
+          if (!/<meta[^>]+viewport/i.test(doc)) {
+            injectSnippet = '<meta name="viewport" content="width=device-width, initial-scale=1.0">' + injectSnippet;
+          }
 
-    function init() {
-      resize();
-      const count = Math.min(140, Math.floor((w * h) / 9500));
-      particles = Array.from({ length: count }, (_, i) => ({
-        x: Math.random() * w,
-        y: Math.random() * h,
-        vx: (Math.random() - 0.5) * 1.2,
-        vy: (Math.random() - 0.5) * 1.2,
-        r: 1.6 + Math.random() * 2.4,
-        hue: 190 + (i % 60)
-      }));
-    }
+          if (/<head(\s[^>]*)?>/i.test(doc)) {
+            doc = doc.replace(/<head(\s[^>]*)?>/i, function (m) {
+              return m + injectSnippet;
+            });
+          } else if (/<html(\s[^>]*)?>/i.test(doc)) {
+            doc = doc.replace(/<html(\s[^>]*)?>/i, function (m) {
+              return m + '<head>' + injectSnippet + '</head>';
+            });
+          } else {
+            doc = injectSnippet + doc;
+          }
 
-    window.addEventListener('resize', init);
-    window.addEventListener('pointermove', (e) => { pointer.x = e.clientX; pointer.y = e.clientY; pointer.active = true; });
-    window.addEventListener('pointerdown', (e) => { pointer.x = e.clientX; pointer.y = e.clientY; pointer.active = true; pulse = 1; });
-    document.getElementById('burstBtn').addEventListener('click', (e) => { e.stopPropagation(); pulse = 1.4; });
-
-    function loop() {
-      ctx.fillStyle = 'rgba(7, 11, 20, 0.22)';
-      ctx.fillRect(0, 0, w, h);
-
-      if (pulse > 0.01) pulse *= 0.94;
-
-      for (let i = 0; i < particles.length; i++) {
-        const p = particles[i];
-        const dx = p.x - pointer.x;
-        const dy = p.y - pointer.y;
-        const dist = Math.hypot(dx, dy) || 1;
-
-        if (pointer.active && dist < 170) {
-          const force = (170 - dist) / 170;
-          p.vx += (dx / dist) * force * 0.45;
-          p.vy += (dy / dist) * force * 0.45;
+          return /<\/body>/i.test(doc)
+            ? doc.replace(/<\/body>/i, `${nonceComment}</body>`)
+            : `${doc}${nonceComment}`;
         }
 
         if (pulse > 0.05) {
@@ -494,12 +678,12 @@
   <\/script>
 </body>
 </html>`
-        },
-        {
-          id: 'sample-ai-card',
-          title: 'AI Artifact UI Card & Simulator',
-          source: 'Contoh Bawaan • Interactive UI',
-          html: `<!DOCTYPE html>
+          },
+          {
+            id: 'sample-ai-card',
+            title: 'AI Artifact UI Card & Simulator',
+            source: 'Contoh Bawaan • Interactive UI',
+            html: `<!DOCTYPE html>
 <html lang="id">
 <head>
   <meta charset="UTF-8" />
@@ -579,12 +763,12 @@
   <\/script>
 </body>
 </html>`
-        },
-        {
-          id: 'sample-svg-geometry',
-          title: 'Geometric Vector Art (SVG)',
-          source: 'Contoh Bawaan • Scalable Vector',
-          html: `<!DOCTYPE html>
+          },
+          {
+            id: 'sample-svg-geometry',
+            title: 'Geometric Vector Art (SVG)',
+            source: 'Contoh Bawaan • Scalable Vector',
+            html: `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -626,137 +810,151 @@
   </div>
 </body>
 </html>`
-        }
-      ];
+          }
+        ];
 
-      // ---------------------------------------------------------------------
-      // B. STATE APLIKASI
-      // ---------------------------------------------------------------------
-      const state = {
-        artifacts: SAMPLE_ARTIFACTS.map((item) => ({ ...item })),
-        currentIndex: 0,
-        zoom: 1, // 0.5 hingga 2.5
-        autoplay: false,
-        autoplayIntervalMs: 6000,
-        autoplayTimer: null,
-        gestureMode: false,
-        hudHidden: false,
-        drawerOpen: false
-      };
+        // -------------------------------------------------------------------
+        // B. STATE APLIKASI
+        // -------------------------------------------------------------------
+        const state = {
+          artifacts: SAMPLE_ARTIFACTS.map((item) => ({ ...item })),
+          currentIndex: 0,
+          zoom: 1, // 0.50 (50%) hingga 2.50 (250%), langkah 0.10 (10%)
+          autoplay: false,
+          autoplayIntervalMs: 6000,
+          autoplayTimer: null,
+          gestureMode: false,
+          hudHidden: false,
+          pseudoFullscreen: false,
+          drawerOpen: false,
+          pasteModalOpen: false,
+          renderToken: 0
+        };
 
-      // ---------------------------------------------------------------------
-      // C. REFERENSI ELEMEN DOM
-      // ---------------------------------------------------------------------
-      const dom = {
-        viewerRoot: document.getElementById('viewer-root'),
-        topHud: document.getElementById('top-hud'),
-        minimalFloatingBar: document.getElementById('minimal-floating-bar'),
-        artifactCounter: document.getElementById('artifact-counter'),
-        activeTitle: document.getElementById('active-artifact-title'),
-        activeMeta: document.getElementById('active-artifact-meta'),
-        zoomStage: document.getElementById('artifact-zoom-stage'),
-        frame: document.getElementById('artifact-frame'),
-        gestureOverlay: document.getElementById('gesture-overlay'),
-        centerIndicator: document.getElementById('center-action-indicator'),
-        centerIcon: document.getElementById('center-action-icon'),
-        centerText: document.getElementById('center-action-text'),
-        drawer: document.getElementById('artifact-drawer'),
-        drawerBackdrop: document.getElementById('drawer-backdrop'),
-        artifactList: document.getElementById('artifact-list'),
-        dropzoneOverlay: document.getElementById('dropzone-overlay'),
-        toastContainer: document.getElementById('toast-container'),
-        fileInput: document.getElementById('file-input'),
+        // -------------------------------------------------------------------
+        // C. REFERENSI ELEMEN DOM
+        // -------------------------------------------------------------------
+        const dom = {
+          viewerRoot: document.getElementById('viewer-root'),
+          topHud: document.getElementById('top-hud'),
+          bottomNavBar: document.getElementById('bottom-nav-bar'),
+          minimalFloatingBar: document.getElementById('minimal-floating-bar'),
+          artifactCounter: document.getElementById('artifact-counter'),
+          activeTitle: document.getElementById('active-artifact-title'),
+          activeMeta: document.getElementById('active-artifact-meta'),
+          zoomStage: document.getElementById('artifact-zoom-stage'),
+          frame: document.getElementById('artifact-frame'),
+          gestureOverlay: document.getElementById('gesture-overlay'),
+          centerIndicator: document.getElementById('center-action-indicator'),
+          centerIcon: document.getElementById('center-action-icon'),
+          centerText: document.getElementById('center-action-text'),
+          drawer: document.getElementById('artifact-drawer'),
+          drawerBackdrop: document.getElementById('drawer-backdrop'),
+          artifactList: document.getElementById('artifact-list'),
+          dropzoneOverlay: document.getElementById('dropzone-overlay'),
+          toastContainer: document.getElementById('toast-container'),
+          fileInput: document.getElementById('file-input'),
 
-        // Tombol-tombol kontrol
-        btnToggleDrawer: document.getElementById('btn-toggle-drawer'),
-        btnCloseDrawer: document.getElementById('btn-close-drawer'),
-        drawerUploadBtn: document.getElementById('drawer-upload-btn'),
-        drawerRestoreBtn: document.getElementById('drawer-restore-samples-btn'),
-        btnZoomIn: document.getElementById('btn-zoom-in'),
-        btnZoomOut: document.getElementById('btn-zoom-out'),
-        btnZoomReset: document.getElementById('btn-zoom-reset'),
-        btnReload: document.getElementById('btn-reload'),
-        btnAutoplay: document.getElementById('btn-autoplay'),
-        iconPlay: document.getElementById('icon-play'),
-        iconPause: document.getElementById('icon-pause'),
-        labelAutoplay: document.getElementById('label-autoplay'),
-        btnGestureMode: document.getElementById('btn-gesture-mode'),
-        labelGesture: document.getElementById('label-gesture'),
-        btnUpload: document.getElementById('btn-upload'),
-        btnHideHud: document.getElementById('btn-hide-hud'),
-        btnFullscreen: document.getElementById('btn-fullscreen'),
-        iconFsEnter: document.getElementById('icon-fs-enter'),
-        iconFsExit: document.getElementById('icon-fs-exit'),
-        miniPrev: document.getElementById('mini-prev'),
-        miniNext: document.getElementById('mini-next'),
-        miniToggleHud: document.getElementById('mini-toggle-hud')
-      };
+          // Modal Paste
+          pasteModal: document.getElementById('paste-modal'),
+          pasteTitleInput: document.getElementById('paste-title-input'),
+          pasteCodeTextarea: document.getElementById('paste-code-textarea'),
+          pasteErrorMsg: document.getElementById('paste-error-msg'),
+          btnClosePaste: document.getElementById('btn-close-paste'),
+          btnCancelPaste: document.getElementById('btn-cancel-paste'),
+          btnSubmitPaste: document.getElementById('btn-submit-paste'),
 
-      // ---------------------------------------------------------------------
-      // D. UTILITAS TOAST & INDIKATOR AKSI VISUAL
-      // ---------------------------------------------------------------------
-      function showToast(message, tone = 'info') {
-        try {
-          const el = document.createElement('div');
-          const colors = {
-            info: 'border-sky-400/30 text-slate-100',
-            success: 'border-emerald-400/30 text-emerald-100',
-            warn: 'border-amber-400/30 text-amber-100',
-            error: 'border-rose-400/30 text-rose-100'
-          };
-          el.className = `toast-anim px-3.5 py-2 rounded-xl bg-surface/90 backdrop-blur-md border ${colors[tone] || colors.info} text-xs font-medium shadow-xl max-w-xs`;
-          el.textContent = message;
-          dom.toastContainer.appendChild(el);
+          // Tombol-tombol utama (ID konsisten & terhubung langsung)
+          btnPrev: document.getElementById('btnPrev'),
+          btnNext: document.getElementById('btnNext'),
+          btnPlay: document.getElementById('btnPlay'),
+          btnList: document.getElementById('btnList'),
+          btnCloseDrawer: document.getElementById('btn-close-drawer'),
+          drawerUploadBtn: document.getElementById('drawer-upload-btn'),
+          drawerRestoreBtn: document.getElementById('drawer-restore-samples-btn'),
+          btnZoomIn: document.getElementById('btnZoomIn'),
+          btnZoomOut: document.getElementById('btnZoomOut'),
+          btnZoomReset: document.getElementById('btnZoomReset'),
+          btnReload: document.getElementById('btnReload'),
+          iconPlay: document.getElementById('icon-play'),
+          iconPause: document.getElementById('icon-pause'),
+          labelAutoplay: document.getElementById('label-autoplay'),
+          btnGesture: document.getElementById('btnGesture'),
+          labelGesture: document.getElementById('label-gesture'),
+          btnPaste: document.getElementById('btnPaste'),
+          btnUpload: document.getElementById('btnUpload'),
+          btnHideHud: document.getElementById('btnHideHud'),
+          btnFullscreen: document.getElementById('btnFullscreen'),
+          btnShowHud: document.getElementById('btnShowHud'),
+          iconFsEnter: document.getElementById('icon-fs-enter'),
+          iconFsExit: document.getElementById('icon-fs-exit')
+        };
 
-          setTimeout(() => {
-            el.style.opacity = '0';
-            el.style.transform = 'translateY(6px)';
-            el.style.transition = 'all 0.2s ease';
-            setTimeout(() => el.remove(), 220);
-          }, 2200);
-        } catch (err) {
-          console.error('Toast error:', err);
-        }
-      }
+        // -------------------------------------------------------------------
+        // D. UTILITAS TOAST & INDIKATOR AKSI VISUAL
+        // -------------------------------------------------------------------
+        function showToast(message, tone = 'info') {
+          try {
+            if (!dom.toastContainer) return;
+            const el = document.createElement('div');
+            const colors = {
+              info: 'border-sky-400/30 text-slate-100',
+              success: 'border-emerald-400/30 text-emerald-100',
+              warn: 'border-amber-400/30 text-amber-100',
+              error: 'border-rose-400/30 text-rose-100'
+            };
+            el.className = `toast-anim px-3.5 py-2 rounded-xl bg-surface/90 backdrop-blur-md border ${colors[tone] || colors.info} text-xs font-medium shadow-xl max-w-xs`;
+            el.textContent = message;
+            dom.toastContainer.appendChild(el);
 
-      let actionBadgeTimeout = null;
-      function triggerCenterIndicator(text, iconSvg = '') {
-        try {
-          if (actionBadgeTimeout) clearTimeout(actionBadgeTimeout);
-          dom.centerIcon.innerHTML = iconSvg;
-          dom.centerText.textContent = text;
-          dom.centerIndicator.classList.remove('hidden');
-
-          // Paksa reflow agar animasi terputar ulang
-          const pill = document.getElementById('center-action-pill');
-          pill.classList.remove('action-badge-anim');
-          void pill.offsetWidth;
-          pill.classList.add('action-badge-anim');
-
-          actionBadgeTimeout = setTimeout(() => {
-            dom.centerIndicator.classList.add('hidden');
-          }, 760);
-        } catch (err) {
-          console.error('Indicator error:', err);
-        }
-      }
-
-      // ---------------------------------------------------------------------
-      // E. KOMPATIBILITAS ARTEFAK HTML / SVG & RENDER IFRAME
-      // ---------------------------------------------------------------------
-      /**
-       * Menyiapkan konten artefak agar kompatibel dengan berbagai output AI
-       * (termasuk fragmen HTML tanpa <html>/<body>, Tailwind/script, atau file .svg).
-       */
-      function normalizeArtifactHtml(rawContent, title = 'Artifact') {
-        const trimmed = (rawContent || '').trim();
-        if (!trimmed) {
-          return `<!DOCTYPE html><html><body style="font-family:sans-serif;padding:24px;color:#334155;">Artefak kosong.</body></html>`;
+            setTimeout(() => {
+              el.style.opacity = '0';
+              el.style.transform = 'translateY(6px)';
+              el.style.transition = 'all 0.2s ease';
+              setTimeout(() => el.remove(), 220);
+            }, 2200);
+          } catch (err) {
+            console.error('Toast error:', err);
+          }
         }
 
-        // Jika konten berupa file SVG murni, bungkus agar tampil rapi dan responsif
-        if (/^<svg[\s>]/i.test(trimmed) || trimmed.startsWith('<?xml')) {
-          return `<!DOCTYPE html>
+        let actionBadgeTimeout = null;
+        function triggerCenterIndicator(text, iconSvg = '') {
+          try {
+            if (!dom.centerIndicator || !dom.centerText || !dom.centerIcon) return;
+            if (actionBadgeTimeout) clearTimeout(actionBadgeTimeout);
+            dom.centerIcon.innerHTML = iconSvg;
+            dom.centerText.textContent = text;
+            dom.centerIndicator.classList.remove('hidden');
+
+            const pill = document.getElementById('center-action-pill');
+            if (pill) {
+              pill.classList.remove('action-badge-anim');
+              void pill.offsetWidth;
+              pill.classList.add('action-badge-anim');
+            }
+
+            actionBadgeTimeout = setTimeout(() => {
+              dom.centerIndicator.classList.add('hidden');
+            }, 760);
+          } catch (err) {
+            console.error('Indicator error:', err);
+          }
+        }
+
+        // -------------------------------------------------------------------
+        // E. KOMPATIBILITAS ARTEFAK HTML / SVG & RENDER IFRAME
+        // -------------------------------------------------------------------
+        function normalizeArtifactHtml(rawContent, title = 'Artifact', reloadNonce = 0) {
+          const trimmed = (rawContent || '').trim();
+          const nonceComment = `<!-- reload:${reloadNonce} -->`;
+
+          if (!trimmed) {
+            return `<!DOCTYPE html><html><body style="font-family:sans-serif;padding:24px;color:#334155;">Artefak kosong. ${nonceComment}</body></html>`;
+          }
+
+          if (/^<svg[\s>]/i.test(trimmed) || trimmed.startsWith('<?xml')) {
+            return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -782,17 +980,17 @@
     }
   </style>
 </head>
-<body>${trimmed}</body>
+<body>${trimmed}${nonceComment}</body>
 </html>`;
-        }
+          }
 
-        // Jika sudah memiliki tag <html> atau <!DOCTYPE html>, kembalikan langsung
-        if (/<!doctype\s+html/i.test(trimmed) || /<html[\s>]/i.test(trimmed)) {
-          return trimmed;
-        }
+          if (/<!doctype\s+html/i.test(trimmed) || /<html[\s>]/i.test(trimmed)) {
+            return /<\/body>/i.test(trimmed)
+              ? trimmed.replace(/<\/body>/i, `${nonceComment}</body>`)
+              : `${trimmed}${nonceComment}`;
+          }
 
-        // Jika berupa fragmen HTML/komponen ala artefak AI, bungkus dengan dokumen HTML standar
-        return `<!DOCTYPE html>
+          return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -802,587 +1000,956 @@
 </head>
 <body class="bg-white text-slate-900 antialiased">
 ${trimmed}
+${nonceComment}
 </body>
 </html>`;
-      }
+        }
 
-      function escapeHtml(str) {
-        return String(str)
-          .replace(/&/g, '&amp;')
-          .replace(/</g, '&lt;')
-          .replace(/>/g, '&gt;')
-          .replace(/"/g, '&quot;');
-      }
+        function escapeHtml(str) {
+          return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+        }
 
-      function renderCurrentArtifact(announce = false) {
-        try {
-          if (!state.artifacts.length) {
-            dom.frame.srcdoc = `<!DOCTYPE html><html><body style="font-family:system-ui,sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;background:#090b10;color:#94a3b8;"><div style="text-align:center;"><p style="font-size:16px;font-weight:600;color:#f1f5f9;">Belum ada artefak</p><p style="font-size:13px;">Unggah file .html, .htm, atau .svg atau muat contoh bawaan.</p></div></body></html>`;
-            dom.artifactCounter.textContent = '0 / 0';
-            dom.activeTitle.textContent = 'Tidak ada artefak';
-            dom.activeMeta.textContent = 'Unggah file untuk memulai';
+        function renderCurrentArtifact(announce = false) {
+          try {
+            if (!dom.frame) return;
+            state.renderToken += 1;
+
+            if (!state.artifacts.length) {
+              dom.frame.srcdoc = `<!DOCTYPE html><html><body style="font-family:system-ui,sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;background:#090b10;color:#94a3b8;"><div style="text-align:center;"><p style="font-size:16px;font-weight:600;color:#f1f5f9;">Belum ada artefak</p><p style="font-size:13px;">Unggah file .html, .htm, .svg atau tempel kode AI.</p></div></body></html>`;
+              dom.artifactCounter.textContent = '0 / 0';
+              dom.activeTitle.textContent = 'Tidak ada artefak';
+              dom.activeMeta.textContent = 'Unggah atau tempel kode untuk memulai';
+              renderDrawerList();
+              return;
+            }
+
+            state.currentIndex = ((state.currentIndex % state.artifacts.length) + state.artifacts.length) % state.artifacts.length;
+            const item = state.artifacts[state.currentIndex];
+            const htmlDoc = normalizeArtifactHtml(item.html, item.title, state.renderToken);
+
+            // Reset srcdoc terlebih dahulu lalu set ulang agar reload selalu memicu eksekusi segar
+            dom.frame.srcdoc = '';
+            requestAnimationFrame(() => {
+              dom.frame.srcdoc = htmlDoc;
+            });
+
+            dom.artifactCounter.textContent = `${state.currentIndex + 1} / ${state.artifacts.length}`;
+            dom.activeTitle.textContent = item.title;
+            dom.activeMeta.textContent = item.source || 'Artefak Lokal';
+
             renderDrawerList();
-            return;
-          }
 
-          state.currentIndex = ((state.currentIndex % state.artifacts.length) + state.artifacts.length) % state.artifacts.length;
-          const item = state.artifacts[state.currentIndex];
-          const htmlDoc = normalizeArtifactHtml(item.html, item.title);
-
-          // Menggunakan srcdoc menjaga isolasi sandbox sekaligus mengizinkan skrip inline, canvas, SVG, dan CDN
-          dom.frame.srcdoc = htmlDoc;
-
-          dom.artifactCounter.textContent = `${state.currentIndex + 1} / ${state.artifacts.length}`;
-          dom.activeTitle.textContent = item.title;
-          dom.activeMeta.textContent = item.source || 'Artefak Lokal';
-
-          renderDrawerList();
-
-          if (announce) {
-            showToast(`${state.currentIndex + 1}/${state.artifacts.length}: ${item.title}`);
-          }
-        } catch (err) {
-          console.error('Gagal merender artefak:', err);
-          showToast('Terjadi kesalahan saat menampilkan artefak', 'error');
-        }
-      }
-
-      function reloadArtifact() {
-        if (!state.artifacts.length) return;
-        renderCurrentArtifact(false);
-        triggerCenterIndicator(
-          'Artefak Dimuat Ulang',
-          '<svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>'
-        );
-        showToast('Artefak dimuat ulang dari awal', 'success');
-      }
-
-      // ---------------------------------------------------------------------
-      // F. NAVIGASI ARTEFAK & AUTOPLAY (SLIDESHOW)
-      // ---------------------------------------------------------------------
-      function goNext(fromGesture = false) {
-        if (state.artifacts.length <= 1) return;
-        state.currentIndex = (state.currentIndex + 1) % state.artifacts.length;
-        renderCurrentArtifact(false);
-        if (fromGesture) {
-          triggerCenterIndicator(
-            `Berikutnya (${state.currentIndex + 1}/${state.artifacts.length})`,
-            '<svg class="w-4 h-4 text-sky-400" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>'
-          );
-        }
-      }
-
-      function goPrev(fromGesture = false) {
-        if (state.artifacts.length <= 1) return;
-        state.currentIndex = (state.currentIndex - 1 + state.artifacts.length) % state.artifacts.length;
-        renderCurrentArtifact(false);
-        if (fromGesture) {
-          triggerCenterIndicator(
-            `Sebelumnya (${state.currentIndex + 1}/${state.artifacts.length})`,
-            '<svg class="w-4 h-4 text-sky-400" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>'
-          );
-        }
-      }
-
-      function startAutoplayTimer() {
-        stopAutoplayTimer();
-        if (state.artifacts.length <= 1) return;
-        state.autoplayTimer = setInterval(() => {
-          goNext(false);
-        }, state.autoplayIntervalMs);
-      }
-
-      function stopAutoplayTimer() {
-        if (state.autoplayTimer) {
-          clearInterval(state.autoplayTimer);
-          state.autoplayTimer = null;
-        }
-      }
-
-      function toggleAutoplay(fromGesture = false) {
-        if (state.artifacts.length <= 1 && !state.autoplay) {
-          showToast('Tambahkan minimal 2 artefak untuk pemutaran otomatis', 'warn');
-          return;
-        }
-
-        state.autoplay = !state.autoplay;
-        updateAutoplayUI();
-
-        if (state.autoplay) {
-          startAutoplayTimer();
-          triggerCenterIndicator(
-            'Autoplay Aktif (Play)',
-            '<svg class="w-4 h-4 text-amber-400" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>'
-          );
-          if (!fromGesture) showToast('Pemutaran otomatis diaktifkan', 'info');
-        } else {
-          stopAutoplayTimer();
-          triggerCenterIndicator(
-            'Autoplay Dijeda (Pause)',
-            '<svg class="w-4 h-4 text-amber-400" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>'
-          );
-          if (!fromGesture) showToast('Pemutaran otomatis dijeda', 'info');
-        }
-      }
-
-      function updateAutoplayUI() {
-        dom.iconPlay.classList.toggle('hidden', state.autoplay);
-        dom.iconPause.classList.toggle('hidden', !state.autoplay);
-        dom.labelAutoplay.textContent = state.autoplay ? 'Pause' : 'Auto';
-        dom.btnAutoplay.classList.toggle('ring-1', state.autoplay);
-        dom.btnAutoplay.classList.toggle('ring-amber-400/60', state.autoplay);
-      }
-
-      // ---------------------------------------------------------------------
-      // G. KONTROL ZOOM (50% - 250%)
-      // ---------------------------------------------------------------------
-      function setZoom(newZoom, showIndicator = true) {
-        const clamped = Math.min(2.5, Math.max(0.5, Number(newZoom.toFixed(2))));
-        state.zoom = clamped;
-        dom.zoomStage.style.transform = `scale(${state.zoom})`;
-        const pct = `${Math.round(state.zoom * 100)}%`;
-        dom.btnZoomReset.textContent = pct;
-
-        if (showIndicator) {
-          triggerCenterIndicator(
-            `Zoom ${pct}`,
-            '<svg class="w-4 h-4 text-sky-400" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z"/></svg>'
-          );
-        }
-      }
-
-      function zoomIn() {
-        setZoom(state.zoom + 0.15, true);
-      }
-
-      function zoomOut() {
-        setZoom(state.zoom - 0.15, true);
-      }
-
-      function resetZoom() {
-        setZoom(1, true);
-      }
-
-      // ---------------------------------------------------------------------
-      // H. MODE BERSIH TANPA TOMBOL (HUD) & FULLSCREEN
-      // ---------------------------------------------------------------------
-      function setHudHidden(hidden) {
-        state.hudHidden = Boolean(hidden);
-        dom.topHud.classList.toggle('hidden', state.hudHidden);
-        dom.minimalFloatingBar.classList.toggle('hidden', !state.hudHidden);
-        showToast(state.hudHidden ? 'Mode bersih aktif (tekan H atau Esc untuk HUD)' : 'HUD ditampilkan');
-      }
-
-      function toggleHud() {
-        setHudHidden(!state.hudHidden);
-      }
-
-      async function toggleFullscreen() {
-        try {
-          if (!document.fullscreenElement) {
-            const target = dom.viewerRoot.requestFullscreen ? dom.viewerRoot : document.documentElement;
-            await target.requestFullscreen();
-          } else {
-            await document.exitFullscreen();
-          }
-        } catch (err) {
-          // Fallback bila fullscreen browser dibatasi oleh iframe pembungkus
-          setHudHidden(!state.hudHidden);
-          showToast('Fullscreen dibatasi lingkungan — mode layar bersih diaktifkan', 'warn');
-        }
-      }
-
-      function syncFullscreenIcons() {
-        const isFs = Boolean(document.fullscreenElement);
-        dom.iconFsEnter.classList.toggle('hidden', isFs);
-        dom.iconFsExit.classList.toggle('hidden', !isFs);
-      }
-
-      // ---------------------------------------------------------------------
-      // I. OVERLAY GESTUR SENTUH (SWIPE KIRI/KANAN & KETUK DUA JARI)
-      // ---------------------------------------------------------------------
-      function setGestureMode(active) {
-        state.gestureMode = Boolean(active);
-        dom.gestureOverlay.classList.toggle('hidden', !state.gestureMode);
-        dom.labelGesture.textContent = state.gestureMode ? 'Gestur: On' : 'Gestur: Off';
-        dom.btnGestureMode.classList.toggle('bg-violet-500/20', state.gestureMode);
-        dom.btnGestureMode.classList.toggle('border-violet-400/50', state.gestureMode);
-        dom.btnGestureMode.classList.toggle('text-violet-200', state.gestureMode);
-
-        showToast(
-          state.gestureMode
-            ? 'Overlay gestur aktif: Geser kiri/kanan & ketuk 2 jari'
-            : 'Overlay gestur nonaktif (interaksi langsung ke artefak)'
-        );
-      }
-
-      function toggleGestureMode() {
-        setGestureMode(!state.gestureMode);
-      }
-
-      // Pelacakan sentuhan pada overlay gestur
-      const gestureTracker = {
-        startX: 0,
-        startY: 0,
-        startTime: 0,
-        maxTouches: 0,
-        tracking: false
-      };
-
-      dom.gestureOverlay.addEventListener(
-        'touchstart',
-        (e) => {
-          gestureTracker.maxTouches = Math.max(gestureTracker.maxTouches, e.touches.length);
-          if (e.touches.length === 1 && gestureTracker.maxTouches === 1) {
-            gestureTracker.startX = e.touches[0].clientX;
-            gestureTracker.startY = e.touches[0].clientY;
-            gestureTracker.startTime = Date.now();
-            gestureTracker.tracking = true;
-          } else if (e.touches.length >= 2) {
-            gestureTracker.tracking = false;
-          }
-        },
-        { passive: true }
-      );
-
-      dom.gestureOverlay.addEventListener(
-        'touchend',
-        (e) => {
-          // Deteksi ketukan dua jari (semua jari terangkat setelah menyentuh >= 2 jari dengan durasi singkat)
-          if (e.touches.length === 0 && gestureTracker.maxTouches >= 2) {
-            const elapsed = Date.now() - gestureTracker.startTime;
-            if (elapsed < 450) {
-              toggleAutoplay(true);
+            if (announce) {
+              showToast(`${state.currentIndex + 1}/${state.artifacts.length}: ${item.title}`);
             }
-            gestureTracker.maxTouches = 0;
-            gestureTracker.tracking = false;
-            return;
+          } catch (err) {
+            console.error('Gagal merender artefak:', err);
+            showToast('Terjadi kesalahan saat menampilkan artefak', 'error');
           }
-
-          // Deteksi geser horizontal satu jari (swipe left / swipe right)
-          if (e.touches.length === 0 && gestureTracker.tracking && gestureTracker.maxTouches === 1) {
-            const changedTouch = e.changedTouches[0];
-            if (changedTouch) {
-              const dx = changedTouch.clientX - gestureTracker.startX;
-              const dy = changedTouch.clientY - gestureTracker.startY;
-              const absX = Math.abs(dx);
-              const absY = Math.abs(dy);
-
-              // Ambang batas geser horizontal >= 55px dan dominan horizontal
-              if (absX >= 55 && absX > absY * 1.25) {
-                if (dx < 0) {
-                  // Geser ke kiri -> Maju ke artefak berikutnya
-                  goNext(true);
-                } else {
-                  // Geser ke kanan -> Mundur ke artefak sebelumnya
-                  goPrev(true);
-                }
-              }
-            }
-          }
-
-          if (e.touches.length === 0) {
-            gestureTracker.maxTouches = 0;
-            gestureTracker.tracking = false;
-          }
-        },
-        { passive: true }
-      );
-
-      // Dukungan drag mouse di overlay gestur untuk pengujian di desktop
-      let mouseDownX = 0;
-      let mouseDragging = false;
-      dom.gestureOverlay.addEventListener('mousedown', (e) => {
-        if (e.button !== 0) return;
-        mouseDownX = e.clientX;
-        mouseDragging = true;
-      });
-      window.addEventListener('mouseup', (e) => {
-        if (!mouseDragging) return;
-        mouseDragging = false;
-        const dx = e.clientX - mouseDownX;
-        if (Math.abs(dx) >= 75) {
-          if (dx < 0) goNext(true);
-          else goPrev(true);
         }
-      });
 
-      // ---------------------------------------------------------------------
-      // J. UPLOAD MULTI-FILE & DRAG-AND-DROP
-      // ---------------------------------------------------------------------
-      function isSupportedArtifactFile(file) {
-        if (!file) return false;
-        const name = (file.name || '').toLowerCase();
-        const type = (file.type || '').toLowerCase();
-        return (
-          name.endsWith('.html') ||
-          name.endsWith('.htm') ||
-          name.endsWith('.svg') ||
-          type === 'text/html' ||
-          type === 'image/svg+xml'
-        );
-      }
-
-      async function handleUploadedFiles(fileList) {
-        try {
-          const files = Array.from(fileList || []);
-          if (!files.length) return;
-
-          const validFiles = files.filter(isSupportedArtifactFile);
-          if (!validFiles.length) {
-            showToast('Pilih file berformat .html, .htm, atau .svg', 'warn');
+        function reloadArtifact() {
+          if (!state.artifacts.length) {
+            showToast('Tidak ada artefak untuk dimuat ulang', 'warn');
             return;
           }
-
-          const newItems = await Promise.all(
-            validFiles.map(
-              (file, idx) =>
-                new Promise((resolve) => {
-                  const reader = new FileReader();
-                  reader.onload = () => {
-                    const cleanName = file.name.replace(/\.(html|htm|svg)$/i, '');
-                    resolve({
-                      id: `uploaded-${Date.now()}-${idx}-${Math.random().toString(36).slice(2, 7)}`,
-                      title: cleanName || file.name,
-                      source: `File Unggahan • ${file.name}`,
-                      html: typeof reader.result === 'string' ? reader.result : ''
-                    });
-                  };
-                  reader.onerror = () => resolve(null);
-                  reader.readAsText(file);
-                })
-            )
-          );
-
-          const filtered = newItems.filter(Boolean);
-          if (!filtered.length) {
-            showToast('Gagal membaca isi file', 'error');
-            return;
-          }
-
-          const firstNewIndex = state.artifacts.length;
-          state.artifacts.push(...filtered);
-          state.currentIndex = firstNewIndex;
           renderCurrentArtifact(false);
+          triggerCenterIndicator(
+            'Artefak Dimuat Ulang',
+            '<svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>'
+          );
+          showToast('Artefak dimuat ulang', 'success');
+        }
+
+        // -------------------------------------------------------------------
+        // F. NAVIGASI ARTEFAK & PLAY / PAUSE AUTO-ADVANCE
+        // -------------------------------------------------------------------
+        function goNext(fromGesture = false) {
+          if (state.artifacts.length <= 1) {
+            showToast('Hanya ada 1 artefak di daftar', 'warn');
+            return;
+          }
+          state.currentIndex = (state.currentIndex + 1) % state.artifacts.length;
+          renderCurrentArtifact(false);
+          if (fromGesture) {
+            triggerCenterIndicator(
+              `Berikutnya (${state.currentIndex + 1}/${state.artifacts.length})`,
+              '<svg class="w-4 h-4 text-sky-400" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>'
+            );
+          }
+        }
+
+        function goPrev(fromGesture = false) {
+          if (state.artifacts.length <= 1) {
+            showToast('Hanya ada 1 artefak di daftar', 'warn');
+            return;
+          }
+          state.currentIndex = (state.currentIndex - 1 + state.artifacts.length) % state.artifacts.length;
+          renderCurrentArtifact(false);
+          if (fromGesture) {
+            triggerCenterIndicator(
+              `Sebelumnya (${state.currentIndex + 1}/${state.artifacts.length})`,
+              '<svg class="w-4 h-4 text-sky-400" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>'
+            );
+          }
+        }
+
+        function startAutoplayTimer() {
+          stopAutoplayTimer();
+          if (state.artifacts.length <= 1) return;
+          state.autoplayTimer = setInterval(() => {
+            goNext(false);
+          }, state.autoplayIntervalMs);
+        }
+
+        function stopAutoplayTimer() {
+          if (state.autoplayTimer) {
+            clearInterval(state.autoplayTimer);
+            state.autoplayTimer = null;
+          }
+        }
+
+        function toggleAutoplay(fromGesture = false) {
+          if (!state.autoplay && state.artifacts.length <= 1) {
+            showToast('Tambahkan minimal 2 artefak untuk mode Play/Pause otomatis', 'warn');
+            return;
+          }
+
+          state.autoplay = !state.autoplay;
+          updateAutoplayUI();
+
+          if (state.autoplay) {
+            startAutoplayTimer();
+            triggerCenterIndicator(
+              'Play Auto-Advance Aktif',
+              '<svg class="w-4 h-4 text-amber-400" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>'
+            );
+            if (!fromGesture) showToast('Play otomatis diaktifkan (tiap 6 detik)', 'info');
+          } else {
+            stopAutoplayTimer();
+            triggerCenterIndicator(
+              'Pause Auto-Advance',
+              '<svg class="w-4 h-4 text-amber-400" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>'
+            );
+            if (!fromGesture) showToast('Auto-advance dijeda', 'info');
+          }
+        }
+
+        function updateAutoplayUI() {
+          dom.iconPlay.classList.toggle('hidden', state.autoplay);
+          dom.iconPause.classList.toggle('hidden', !state.autoplay);
+          dom.labelAutoplay.textContent = state.autoplay ? 'Pause' : 'Play';
+          dom.btnPlay.classList.toggle('ring-1', state.autoplay);
+          dom.btnPlay.classList.toggle('ring-amber-400/60', state.autoplay);
+        }
+
+        // -------------------------------------------------------------------
+        // G. KONTROL ZOOM (50% - 250%, LANGKAH 10%)
+        // -------------------------------------------------------------------
+        function setZoom(newZoom, showIndicator = true) {
+          const clamped = Math.min(2.5, Math.max(0.5, Number(Number(newZoom).toFixed(2))));
+          state.zoom = clamped;
+          if (dom.zoomStage) {
+            dom.zoomStage.style.transform = `scale(${state.zoom})`;
+          }
+          const pct = `${Math.round(state.zoom * 100)}%`;
+          if (dom.btnZoomReset) {
+            dom.btnZoomReset.textContent = pct;
+          }
+
+          if (showIndicator) {
+            triggerCenterIndicator(
+              `Zoom ${pct}`,
+              '<svg class="w-4 h-4 text-sky-400" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z"/></svg>'
+            );
+          }
+        }
+
+        function zoomIn() {
+          setZoom(state.zoom + 0.1, true);
+        }
+
+        function zoomOut() {
+          setZoom(state.zoom - 0.1, true);
+        }
+
+        function resetZoom() {
+          setZoom(1, true);
+        }
+
+        // -------------------------------------------------------------------
+        // H. MODE BERSIH TANPA TOMBOL (HUD) & FULLSCREEN + FALLBACK
+        // -------------------------------------------------------------------
+        function applyHudVisibility() {
+          document.body.classList.toggle('clean-view', state.hudHidden);
+          if (dom.minimalFloatingBar) {
+            const isNativeFs = Boolean(document.fullscreenElement);
+            dom.minimalFloatingBar.classList.toggle('hidden', !state.hudHidden || isNativeFs);
+          }
+        }
+
+        function setHudHidden(hidden, notify = true) {
+          state.hudHidden = Boolean(hidden);
+          applyHudVisibility();
+          if (notify) {
+            showToast(
+              state.hudHidden
+                ? 'Mode bersih tanpa tombol aktif (tekan H atau Esc untuk kembali)'
+                : 'Tombol & HUD ditampilkan'
+            );
+          }
+        }
+
+        function toggleHud() {
+          setHudHidden(!state.hudHidden, true);
+        }
+
+        function setPseudoFullscreen(active) {
+          state.pseudoFullscreen = Boolean(active);
+          document.documentElement.classList.toggle('is-fullscreen', state.pseudoFullscreen);
+          document.body.classList.toggle('is-fullscreen', state.pseudoFullscreen);
+          syncFullscreenIcons();
+        }
+
+        async function toggleFullscreen() {
+          try {
+            if (document.fullscreenElement) {
+              await document.exitFullscreen();
+              setPseudoFullscreen(false);
+              return;
+            }
+
+            if (state.pseudoFullscreen) {
+              setPseudoFullscreen(false);
+              showToast('Keluar dari mode layar penuh');
+              return;
+            }
+
+            const target = document.documentElement;
+            if (target && typeof target.requestFullscreen === 'function') {
+              await target.requestFullscreen();
+              setPseudoFullscreen(false);
+            } else {
+              setPseudoFullscreen(true);
+              showToast('Mode layar penuh aktif', 'info');
+            }
+          } catch (err) {
+            // Fallback CSS penuh layar jika Fullscreen API ditolak oleh iframe sandbox/browser
+            const nextPseudo = !state.pseudoFullscreen;
+            setPseudoFullscreen(nextPseudo);
+            showToast(
+              nextPseudo
+                ? 'Mode layar penuh aktif (CSS fallback)'
+                : 'Keluar dari mode layar penuh',
+              'info'
+            );
+          }
+        }
+
+        function syncFullscreenIcons() {
+          const isFs = Boolean(document.fullscreenElement) || state.pseudoFullscreen;
+          if (dom.iconFsEnter) dom.iconFsEnter.classList.toggle('hidden', isFs);
+          if (dom.iconFsExit) dom.iconFsExit.classList.toggle('hidden', !isFs);
+          applyHudVisibility();
+        }
+
+        // -------------------------------------------------------------------
+        // I. OVERLAY GESTUR SENTUH (SWIPE KIRI/KANAN & KETUK DUA JARI)
+        // -------------------------------------------------------------------
+        function setGestureMode(active) {
+          state.gestureMode = Boolean(active);
+          if (dom.gestureOverlay) {
+            dom.gestureOverlay.classList.toggle('hidden', !state.gestureMode);
+          }
+          if (dom.labelGesture) {
+            dom.labelGesture.textContent = state.gestureMode ? 'Gestur: On' : 'Gestur: Off';
+          }
+          if (dom.btnGesture) {
+            dom.btnGesture.classList.toggle('bg-violet-500/20', state.gestureMode);
+            dom.btnGesture.classList.toggle('border-violet-400/50', state.gestureMode);
+            dom.btnGesture.classList.toggle('text-violet-200', state.gestureMode);
+          }
 
           showToast(
-            filtered.length === 1
-              ? `Memuat "${filtered[0].title}"`
-              : `${filtered.length} artefak berhasil ditambahkan`,
-            'success'
+            state.gestureMode
+              ? 'Gestur aktif: Geser kiri/kanan & ketuk 2 jari'
+              : 'Gestur nonaktif (interaksi langsung ke artefak)'
           );
-        } catch (err) {
-          console.error('Upload error:', err);
-          showToast('Terjadi kesalahan saat mengunggah file', 'error');
-        } finally {
-          dom.fileInput.value = '';
         }
-      }
 
-      // Drag-and-drop ke seluruh area aplikasi
-      let dragCounter = 0;
-      window.addEventListener('dragenter', (e) => {
-        e.preventDefault();
-        dragCounter += 1;
-        dom.dropzoneOverlay.classList.remove('hidden');
-      });
-
-      window.addEventListener('dragover', (e) => {
-        e.preventDefault();
-      });
-
-      window.addEventListener('dragleave', (e) => {
-        e.preventDefault();
-        dragCounter = Math.max(0, dragCounter - 1);
-        if (dragCounter === 0) {
-          dom.dropzoneOverlay.classList.add('hidden');
+        function toggleGestureMode() {
+          setGestureMode(!state.gestureMode);
         }
-      });
 
-      window.addEventListener('drop', (e) => {
-        e.preventDefault();
-        dragCounter = 0;
-        dom.dropzoneOverlay.classList.add('hidden');
-        if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-          handleUploadedFiles(e.dataTransfer.files);
-        }
-      });
+        const gestureTracker = {
+          startX: 0,
+          startY: 0,
+          startTime: 0,
+          maxTouches: 0,
+          tracking: false
+        };
 
-      // ---------------------------------------------------------------------
-      // K. DRAWER DAFTAR ARTEFAK
-      // ---------------------------------------------------------------------
-      function setDrawerOpen(open) {
-        state.drawerOpen = Boolean(open);
-        dom.drawer.classList.toggle('-translate-x-full', !state.drawerOpen);
-        dom.drawerBackdrop.classList.toggle('hidden', !state.drawerOpen);
-      }
+        if (dom.gestureOverlay) {
+          dom.gestureOverlay.addEventListener(
+            'touchstart',
+            (e) => {
+              gestureTracker.maxTouches = Math.max(gestureTracker.maxTouches, e.touches.length);
+              if (e.touches.length >= 2) {
+                gestureTracker.startTime = Date.now();
+                gestureTracker.tracking = false;
+              } else if (e.touches.length === 1 && gestureTracker.maxTouches === 1) {
+                gestureTracker.startX = e.touches[0].clientX;
+                gestureTracker.startY = e.touches[0].clientY;
+                gestureTracker.startTime = Date.now();
+                gestureTracker.tracking = true;
+              }
+            },
+            { passive: true }
+          );
 
-      function renderDrawerList() {
-        dom.artifactList.innerHTML = '';
+          dom.gestureOverlay.addEventListener(
+            'touchend',
+            (e) => {
+              // Ketukan dua jari singkat (< 300ms) untuk toggle Play / Pause
+              if (e.touches.length === 0 && gestureTracker.maxTouches >= 2) {
+                const elapsed = Date.now() - gestureTracker.startTime;
+                if (elapsed < 300) {
+                  toggleAutoplay(true);
+                }
+                gestureTracker.maxTouches = 0;
+                gestureTracker.tracking = false;
+                return;
+              }
 
-        state.artifacts.forEach((item, index) => {
-          const isActive = index === state.currentIndex;
-          const row = document.createElement('div');
-          row.className = `group flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl border transition cursor-pointer ${
-            isActive
-              ? 'bg-sky-500/15 border-sky-400/40 text-white'
-              : 'bg-elevated/60 hover:bg-elevated border-white/5 text-slate-300'
-          }`;
+              // Geser kiri (dx < -50px) -> maju; Geser kanan (dx > 50px) -> mundur
+              if (e.touches.length === 0 && gestureTracker.tracking && gestureTracker.maxTouches === 1) {
+                const changedTouch = e.changedTouches[0];
+                if (changedTouch) {
+                  const dx = changedTouch.clientX - gestureTracker.startX;
+                  const dy = changedTouch.clientY - gestureTracker.startY;
+                  const absX = Math.abs(dx);
+                  const absY = Math.abs(dy);
 
-          const info = document.createElement('div');
-          info.className = 'min-w-0 flex-1';
-          info.innerHTML = `
-            <div class="text-xs font-semibold truncate">${escapeHtml(item.title)}</div>
-            <div class="text-[10px] text-slate-400 truncate mt-0.5">${escapeHtml(item.source || 'Artefak')}</div>
-          `;
-          info.addEventListener('click', () => {
-            state.currentIndex = index;
-            renderCurrentArtifact(true);
-            setDrawerOpen(false);
+                  if (absX > 50 && absX > absY * 1.2) {
+                    if (dx < -50) {
+                      goNext(true);
+                    } else if (dx > 50) {
+                      goPrev(true);
+                    }
+                  }
+                }
+              }
+
+              if (e.touches.length === 0) {
+                gestureTracker.maxTouches = 0;
+                gestureTracker.tracking = false;
+              }
+            },
+            { passive: true }
+          );
+
+          // Drag mouse di overlay gestur untuk pengujian swipe di desktop
+          let mouseDownX = 0;
+          let mouseDragging = false;
+          dom.gestureOverlay.addEventListener('mousedown', (e) => {
+            if (e.button !== 0) return;
+            mouseDownX = e.clientX;
+            mouseDragging = true;
           });
+          window.addEventListener('mouseup', (e) => {
+            if (!mouseDragging) return;
+            mouseDragging = false;
+            const dx = e.clientX - mouseDownX;
+            if (Math.abs(dx) > 65) {
+              if (dx < -65) goNext(true);
+              else if (dx > 65) goPrev(true);
+            }
+          });
+        }
 
-          const removeBtn = document.createElement('button');
-          removeBtn.type = 'button';
-          removeBtn.title = 'Hapus artefak';
-          removeBtn.className = 'p-1.5 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition shrink-0';
-          removeBtn.innerHTML = `
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-            </svg>
-          `;
-          removeBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            state.artifacts.splice(index, 1);
-            if (state.currentIndex >= state.artifacts.length) {
-              state.currentIndex = Math.max(0, state.artifacts.length - 1);
+        // -------------------------------------------------------------------
+        // J. UPLOAD MULTI-FILE, PASTE KODE AI & DRAG-AND-DROP
+        // -------------------------------------------------------------------
+        function isSupportedArtifactFile(file) {
+          if (!file) return false;
+          const name = (file.name || '').toLowerCase();
+          const type = (file.type || '').toLowerCase();
+          return (
+            name.endsWith('.html') ||
+            name.endsWith('.htm') ||
+            name.endsWith('.svg') ||
+            type === 'text/html' ||
+            type === 'image/svg+xml'
+          );
+        }
+
+        async function handleUploadedFiles(fileList) {
+          try {
+            const files = Array.from(fileList || []);
+            if (!files.length) return;
+
+            const validFiles = files.filter(isSupportedArtifactFile);
+            if (!validFiles.length) {
+              showToast('Pilih file berformat .html, .htm, atau .svg', 'warn');
+              return;
             }
-            if (state.artifacts.length <= 1 && state.autoplay) {
-              toggleAutoplay(false);
+
+            const newItems = await Promise.all(
+              validFiles.map(
+                (file, idx) =>
+                  new Promise((resolve) => {
+                    const reader = new FileReader();
+                    reader.onload = () => {
+                      const cleanName = file.name.replace(/\.(html|htm|svg)$/i, '');
+                      resolve({
+                        id: `uploaded-${Date.now()}-${idx}-${Math.random().toString(36).slice(2, 7)}`,
+                        title: cleanName || file.name,
+                        source: `File Unggahan • ${file.name}`,
+                        html: typeof reader.result === 'string' ? reader.result : ''
+                      });
+                    };
+                    reader.onerror = () => resolve(null);
+                    reader.readAsText(file);
+                  })
+              )
+            );
+
+            const filtered = newItems.filter(Boolean);
+            if (!filtered.length) {
+              showToast('Gagal membaca isi file', 'error');
+              return;
             }
+
+            const firstNewIndex = state.artifacts.length;
+            state.artifacts.push(...filtered);
+            state.currentIndex = firstNewIndex;
             renderCurrentArtifact(false);
-            showToast('Artefak dihapus dari daftar');
+
+            showToast(
+              filtered.length === 1
+                ? `Memuat "${filtered[0].title}"`
+                : `${filtered.length} artefak berhasil ditambahkan`,
+              'success'
+            );
+          } catch (err) {
+            console.error('Upload error:', err);
+            showToast('Terjadi kesalahan saat mengunggah file', 'error');
+          } finally {
+            if (dom.fileInput) dom.fileInput.value = '';
+          }
+        }
+
+        function openUploadDialog() {
+          if (dom.fileInput) {
+            dom.fileInput.click();
+          }
+        }
+
+        function setPasteModalOpen(open) {
+          state.pasteModalOpen = Boolean(open);
+          if (dom.pasteModal) {
+            dom.pasteModal.classList.toggle('hidden', !state.pasteModalOpen);
+          }
+          if (dom.pasteErrorMsg) {
+            dom.pasteErrorMsg.classList.add('hidden');
+            dom.pasteErrorMsg.textContent = '';
+          }
+          if (state.pasteModalOpen && dom.pasteCodeTextarea) {
+            setTimeout(() => dom.pasteCodeTextarea.focus(), 30);
+          }
+        }
+
+        function submitPastedArtifact() {
+          const rawCode = dom.pasteCodeTextarea ? dom.pasteCodeTextarea.value : '';
+          if (!rawCode.trim()) {
+            if (dom.pasteErrorMsg) {
+              dom.pasteErrorMsg.textContent = 'Silakan tempelkan kode HTML atau SVG terlebih dahulu.';
+              dom.pasteErrorMsg.classList.remove('hidden');
+            }
+            return;
+          }
+
+          const customTitle = dom.pasteTitleInput ? dom.pasteTitleInput.value.trim() : '';
+          const titleMatch = rawCode.match(/<title[^>]*>([^<]+)<\/title>/i);
+          const derivedTitle =
+            customTitle ||
+            (titleMatch && titleMatch[1].trim()) ||
+            `AI Artifact #${state.artifacts.length + 1}`;
+
+          state.artifacts.push({
+            id: `pasted-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+            title: derivedTitle,
+            source: 'Kode Tempelan (AI Artifact)',
+            html: rawCode
           });
 
-          row.appendChild(info);
-          row.appendChild(removeBtn);
-          dom.artifactList.appendChild(row);
+          state.currentIndex = state.artifacts.length - 1;
+          renderCurrentArtifact(false);
+
+          if (dom.pasteTitleInput) dom.pasteTitleInput.value = '';
+          if (dom.pasteCodeTextarea) dom.pasteCodeTextarea.value = '';
+          setPasteModalOpen(false);
+          showToast(`Artefak "${derivedTitle}" ditambahkan`, 'success');
+        }
+
+        // Drag-and-drop ke window / document
+        let dragCounter = 0;
+        const onDragEnter = (e) => {
+          e.preventDefault();
+          dragCounter += 1;
+          if (dom.dropzoneOverlay) dom.dropzoneOverlay.classList.remove('hidden');
+        };
+        const onDragOver = (e) => {
+          e.preventDefault();
+        };
+        const onDragLeave = (e) => {
+          e.preventDefault();
+          dragCounter = Math.max(0, dragCounter - 1);
+          if (dragCounter === 0 && dom.dropzoneOverlay) {
+            dom.dropzoneOverlay.classList.add('hidden');
+          }
+        };
+        const onDrop = (e) => {
+          e.preventDefault();
+          dragCounter = 0;
+          if (dom.dropzoneOverlay) dom.dropzoneOverlay.classList.add('hidden');
+          if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+            handleUploadedFiles(e.dataTransfer.files);
+          }
+        };
+
+        window.addEventListener('dragenter', onDragEnter);
+        window.addEventListener('dragover', onDragOver);
+        window.addEventListener('dragleave', onDragLeave);
+        window.addEventListener('drop', onDrop);
+        document.addEventListener('dragover', onDragOver);
+        document.addEventListener('drop', onDrop);
+
+        // -------------------------------------------------------------------
+        // K. DRAWER DAFTAR ARTEFAK
+        // -------------------------------------------------------------------
+        function setDrawerOpen(open) {
+          state.drawerOpen = Boolean(open);
+          if (dom.drawer) {
+            dom.drawer.classList.toggle('-translate-x-full', !state.drawerOpen);
+          }
+          if (dom.drawerBackdrop) {
+            dom.drawerBackdrop.classList.toggle('hidden', !state.drawerOpen);
+          }
+        }
+
+        function renderDrawerList() {
+          if (!dom.artifactList) return;
+          dom.artifactList.innerHTML = '';
+
+          state.artifacts.forEach((item, index) => {
+            const isActive = index === state.currentIndex;
+            const row = document.createElement('div');
+            row.className = `group flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl border transition cursor-pointer ${
+              isActive
+                ? 'bg-sky-500/15 border-sky-400/40 text-white'
+                : 'bg-elevated/60 hover:bg-elevated border-white/5 text-slate-300'
+            }`;
+
+            const info = document.createElement('div');
+            info.className = 'min-w-0 flex-1';
+            info.innerHTML = `
+              <div class="text-xs font-semibold truncate">${escapeHtml(item.title)}</div>
+              <div class="text-[10px] text-slate-400 truncate mt-0.5">${escapeHtml(item.source || 'Artefak')}</div>
+            `;
+            info.addEventListener('click', () => {
+              state.currentIndex = index;
+              renderCurrentArtifact(true);
+              setDrawerOpen(false);
+            });
+
+            const removeBtn = document.createElement('button');
+            removeBtn.type = 'button';
+            removeBtn.title = 'Hapus artefak';
+            removeBtn.className = 'p-1.5 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition shrink-0 cursor-pointer';
+            removeBtn.innerHTML = `
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+            `;
+            removeBtn.addEventListener('click', (e) => {
+              e.stopPropagation();
+              state.artifacts.splice(index, 1);
+              if (state.currentIndex >= state.artifacts.length) {
+                state.currentIndex = Math.max(0, state.artifacts.length - 1);
+              }
+              if (state.artifacts.length <= 1 && state.autoplay) {
+                toggleAutoplay(false);
+              }
+              renderCurrentArtifact(false);
+              showToast('Artefak dihapus dari daftar');
+            });
+
+            row.appendChild(info);
+            row.appendChild(removeBtn);
+            dom.artifactList.appendChild(row);
+          });
+        }
+
+        // -------------------------------------------------------------------
+        // L. DUKUNGAN NAVIGASI KEYBOARD LENGKAP
+        // -------------------------------------------------------------------
+        window.addEventListener('keydown', (e) => {
+          const tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : '';
+          const isEditable = tag === 'input' || tag === 'textarea' || (e.target && e.target.isContentEditable);
+
+          if (e.key === 'Escape') {
+            if (state.pasteModalOpen) {
+              setPasteModalOpen(false);
+              return;
+            }
+            if (state.drawerOpen) {
+              setDrawerOpen(false);
+              return;
+            }
+            if (state.hudHidden) {
+              setHudHidden(false, true);
+              return;
+            }
+            if (state.pseudoFullscreen) {
+              setPseudoFullscreen(false);
+              return;
+            }
+          }
+
+          if (isEditable) return;
+
+          switch (e.key) {
+            case 'ArrowRight':
+            case 'ArrowDown':
+            case 'PageDown':
+              e.preventDefault();
+              goNext(true);
+              break;
+            case 'ArrowLeft':
+            case 'ArrowUp':
+            case 'PageUp':
+              e.preventDefault();
+              goPrev(true);
+              break;
+            case ' ':
+              e.preventDefault();
+              toggleAutoplay(true);
+              break;
+            case '+':
+            case '=':
+              e.preventDefault();
+              zoomIn();
+              break;
+            case '-':
+            case '_':
+              e.preventDefault();
+              zoomOut();
+              break;
+            case '0':
+              e.preventDefault();
+              resetZoom();
+              break;
+            case 'r':
+            case 'R':
+              e.preventDefault();
+              reloadArtifact();
+              break;
+            case 'f':
+            case 'F':
+              e.preventDefault();
+              toggleFullscreen();
+              break;
+            case 'h':
+            case 'H':
+              e.preventDefault();
+              toggleHud();
+              break;
+            case 'g':
+            case 'G':
+              e.preventDefault();
+              toggleGestureMode();
+              break;
+            case 'l':
+            case 'L':
+              e.preventDefault();
+              setDrawerOpen(!state.drawerOpen);
+              break;
+            default:
+              break;
+          }
         });
+
+        // -------------------------------------------------------------------
+        // M. PENGIKATAN EVENT SEMUA TOMBOL & INISIALISASI
+        // -------------------------------------------------------------------
+        // L. DUKUNGAN NAVIGASI KEYBOARD, POSTMESSAGE & PASTE GLOBAL
+        // -------------------------------------------------------------------
+        let pinchStartZoom = null;
+
+        addEventListener('message', function (e) {
+          if (!dom.frame || e.source !== dom.frame.contentWindow || !e.data || !e.data.__pl) return;
+          const m = e.data.m || {};
+          if (m.k) {
+            if (m.k === 'k' || m.k === 'K') {
+              if (state.artifacts.length) toggleAutoplay(true);
+            } else if (m.k === 'o' || m.k === 'O') {
+              openUploadDialog();
+            } else if (m.k === '[') {
+              goPrev(true);
+            } else if (m.k === ']') {
+              goNext(true);
+            } else {
+              handleViewerKeyAction(m.k);
+            }
+          } else if (m.sw) {
+            if (m.sw > 0) goNext(true);
+            else goPrev(true);
+          } else if (m.tap === 2) {
+            toggleAutoplay(true);
+          } else if (m.tap === 3) {
+            openUploadDialog();
+          } else if (m.zr) {
+            if (pinchStartZoom === null) pinchStartZoom = state.zoom;
+            setZoom(pinchStartZoom * m.zr, true);
+          } else if (m.ze) {
+            pinchStartZoom = null;
+          } else if (m.zw) {
+            setZoom(state.zoom * (m.zw < 0 ? 1.1 : 1 / 1.1), true);
+          }
+        });
+
+        function handleViewerKeyAction(key) {
+          switch (key) {
+            case 'ArrowRight':
+            case 'ArrowDown':
+            case 'PageDown':
+            case ']':
+              goNext(true);
+              return true;
+            case 'ArrowLeft':
+            case 'ArrowUp':
+            case 'PageUp':
+            case '[':
+              goPrev(true);
+              return true;
+            case ' ':
+            case 'k':
+            case 'K':
+              toggleAutoplay(true);
+              return true;
+            case '+':
+            case '=':
+              zoomIn();
+              return true;
+            case '-':
+            case '_':
+              zoomOut();
+              return true;
+            case '0':
+              resetZoom();
+              return true;
+            case 'r':
+            case 'R':
+              reloadArtifact();
+              return true;
+            case 'f':
+            case 'F':
+              toggleFullscreen();
+              return true;
+            case 'h':
+            case 'H':
+              toggleHud();
+              return true;
+            case 'g':
+            case 'G':
+              toggleGestureMode();
+              return true;
+            case 'l':
+            case 'L':
+              setDrawerOpen(!state.drawerOpen);
+              return true;
+            case 'o':
+            case 'O':
+              openUploadDialog();
+              return true;
+            default:
+              return false;
+          }
+        }
+
+        window.addEventListener('keydown', (e) => {
+          if (e.ctrlKey || e.metaKey || e.altKey) return;
+          const tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : '';
+          const isEditable = tag === 'input' || tag === 'textarea' || (e.target && e.target.isContentEditable);
+
+          if (e.key === 'Escape') {
+            if (state.pasteModalOpen) {
+              setPasteModalOpen(false);
+              return;
+            }
+            if (state.drawerOpen) {
+              setDrawerOpen(false);
+              return;
+            }
+            if (state.hudHidden) {
+              setHudHidden(false, true);
+              return;
+            }
+            if (state.pseudoFullscreen) {
+              setPseudoFullscreen(false);
+              return;
+            }
+          }
+
+          if (isEditable) return;
+
+          if (handleViewerKeyAction(e.key)) {
+            e.preventDefault();
+          }
+        });
+
+        window.addEventListener('wheel', (e) => {
+          if (e.ctrlKey) {
+            e.preventDefault();
+            setZoom(state.zoom * (e.deltaY < 0 ? 1.1 : 1 / 1.1), true);
+          }
+        }, { passive: false });
+
+        window.addEventListener('paste', (e) => {
+          if (state.pasteModalOpen) return;
+          const tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : '';
+          if (tag === 'input' || tag === 'textarea') return;
+          const clipboardText = e.clipboardData && e.clipboardData.getData('text');
+          if (clipboardText && /<\w+[\s>]/.test(clipboardText)) {
+            const titleMatch = clipboardText.match(/<title[^>]*>([^<]+)<\/title>/i);
+            const title = (titleMatch && titleMatch[1].trim()) || `Kode Tempel #${state.artifacts.length + 1}`;
+            state.artifacts.push({
+              id: `clip-${Date.now()}`,
+              title,
+              source: 'Clipboard (Ctrl+V)',
+              html: clipboardText
+            });
+            state.currentIndex = state.artifacts.length - 1;
+            setHomeScreenVisible(false);
+            renderCurrentArtifact(false);
+            showToast(`Memuat "${title}"`, 'success');
+          }
+        });
+
+        // -------------------------------------------------------------------
+        // M. PENGIKATAN EVENT SEMUA TOMBOL & INISIALISASI
+        // -------------------------------------------------------------------
+        const homeScreenEl = document.getElementById('home-drop-screen');
+        const homePickBtn = document.getElementById('home-pick-file-btn');
+        const homePasteBtn = document.getElementById('home-paste-code-btn');
+        const homeSamplesBtn = document.getElementById('home-load-samples-btn');
+
+        function setHomeScreenVisible(visible) {
+          if (!homeScreenEl) return;
+          homeScreenEl.hidden = !visible;
+        }
+
+        if (homePickBtn) homePickBtn.addEventListener('click', openUploadDialog);
+        if (homePasteBtn) homePasteBtn.addEventListener('click', () => setPasteModalOpen(true));
+        if (homeSamplesBtn) {
+          homeSamplesBtn.addEventListener('click', () => {
+            state.artifacts = SAMPLE_ARTIFACTS.map((item) => ({ ...item }));
+            state.currentIndex = 0;
+            setHomeScreenVisible(false);
+            renderCurrentArtifact(false);
+            showToast('Contoh artefak dimuat', 'success');
+          });
+        }
+
+        const origDragEnter = onDragEnter;
+        const origDragLeave = onDragLeave;
+        const origDrop = onDrop;
+
+        window.removeEventListener('dragenter', origDragEnter);
+        window.removeEventListener('dragleave', origDragLeave);
+        window.removeEventListener('drop', origDrop);
+
+        window.addEventListener('dragenter', (e) => {
+          origDragEnter(e);
+          if (homeScreenEl) homeScreenEl.classList.add('is-dragover');
+        });
+        window.addEventListener('dragleave', (e) => {
+          origDragLeave(e);
+          if (dragCounter === 0 && homeScreenEl) homeScreenEl.classList.remove('is-dragover');
+        });
+        window.addEventListener('drop', (e) => {
+          if (homeScreenEl) homeScreenEl.classList.remove('is-dragover');
+          setHomeScreenVisible(false);
+          origDrop(e);
+        });
+
+        if (dom.btnPrev) dom.btnPrev.addEventListener('click', () => goPrev(false));
+        if (dom.btnNext) dom.btnNext.addEventListener('click', () => goNext(false));
+        if (dom.btnPlay) dom.btnPlay.addEventListener('click', () => toggleAutoplay(false));
+
+        if (dom.btnList) dom.btnList.addEventListener('click', () => setDrawerOpen(!state.drawerOpen));
+        if (dom.btnCloseDrawer) dom.btnCloseDrawer.addEventListener('click', () => setDrawerOpen(false));
+        if (dom.drawerBackdrop) dom.drawerBackdrop.addEventListener('click', () => setDrawerOpen(false));
+
+        if (dom.drawerUploadBtn) dom.drawerUploadBtn.addEventListener('click', openUploadDialog);
+        if (dom.btnUpload) dom.btnUpload.addEventListener('click', openUploadDialog);
+        if (dom.fileInput) {
+          dom.fileInput.addEventListener('change', (e) => {
+            if (e.target && e.target.files && e.target.files.length) {
+              setHomeScreenVisible(false);
+            }
+            handleUploadedFiles(e.target.files);
+          });
+        }
+
+        if (dom.drawerRestoreBtn) {
+          dom.drawerRestoreBtn.addEventListener('click', () => {
+            state.artifacts = SAMPLE_ARTIFACTS.map((item) => ({ ...item }));
+            state.currentIndex = 0;
+            setHomeScreenVisible(false);
+            renderCurrentArtifact(false);
+            setDrawerOpen(false);
+            showToast('Contoh artefak bawaan dimuat ulang', 'success');
+          });
+        }
+
+        if (dom.btnPaste) dom.btnPaste.addEventListener('click', () => setPasteModalOpen(true));
+        if (dom.btnClosePaste) dom.btnClosePaste.addEventListener('click', () => setPasteModalOpen(false));
+        if (dom.btnCancelPaste) dom.btnCancelPaste.addEventListener('click', () => setPasteModalOpen(false));
+        if (dom.btnSubmitPaste) {
+          dom.btnSubmitPaste.addEventListener('click', () => {
+            setHomeScreenVisible(false);
+            submitPastedArtifact();
+          });
+        }
+
+        if (dom.btnZoomIn) dom.btnZoomIn.addEventListener('click', zoomIn);
+        if (dom.btnZoomOut) dom.btnZoomOut.addEventListener('click', zoomOut);
+        if (dom.btnZoomReset) dom.btnZoomReset.addEventListener('click', resetZoom);
+        if (dom.btnReload) dom.btnReload.addEventListener('click', reloadArtifact);
+
+        if (dom.btnGesture) dom.btnGesture.addEventListener('click', toggleGestureMode);
+        if (dom.btnHideHud) dom.btnHideHud.addEventListener('click', toggleHud);
+        if (dom.btnShowHud) dom.btnShowHud.addEventListener('click', () => setHudHidden(false, true));
+        if (dom.btnFullscreen) dom.btnFullscreen.addEventListener('click', toggleFullscreen);
+
+        document.addEventListener('fullscreenchange', syncFullscreenIcons);
+
+        // Render artefak pertama dan set zoom 100%
+        renderCurrentArtifact(false);
+        setZoom(1, false);
       }
 
-      // ---------------------------------------------------------------------
-      // L. DUKUNGAN NAVIGASI KEYBOARD LENGKAP
-      // ---------------------------------------------------------------------
-      window.addEventListener('keydown', (e) => {
-        // Hindari membajak shortcut saat mengetik pada input/textarea
-        const tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : '';
-        if (tag === 'input' || tag === 'textarea') return;
-
-        // Escape menutup drawer atau menampilkan kembali HUD jika sedang tersembunyi
-        if (e.key === 'Escape') {
-          if (state.drawerOpen) {
-            setDrawerOpen(false);
-            return;
-          }
-          if (state.hudHidden) {
-            setHudHidden(false);
-            return;
-          }
-        }
-
-        switch (e.key) {
-          case 'ArrowRight':
-            e.preventDefault();
-            goNext(true);
-            break;
-          case 'ArrowLeft':
-            e.preventDefault();
-            goPrev(true);
-            break;
-          case ' ':
-            e.preventDefault();
-            toggleAutoplay(true);
-            break;
-          case '+':
-          case '=':
-            e.preventDefault();
-            zoomIn();
-            break;
-          case '-':
-          case '_':
-            e.preventDefault();
-            zoomOut();
-            break;
-          case '0':
-            e.preventDefault();
-            resetZoom();
-            break;
-          case 'r':
-          case 'R':
-            e.preventDefault();
-            reloadArtifact();
-            break;
-          case 'f':
-          case 'F':
-            e.preventDefault();
-            toggleFullscreen();
-            break;
-          case 'h':
-          case 'H':
-            e.preventDefault();
-            toggleHud();
-            break;
-          case 'g':
-          case 'G':
-            e.preventDefault();
-            toggleGestureMode();
-            break;
-          case 'l':
-          case 'L':
-            e.preventDefault();
-            setDrawerOpen(!state.drawerOpen);
-            break;
-          default:
-            break;
-        }
-      });
-
-      // ---------------------------------------------------------------------
-      // M. PENGIKATAN EVENT TOMBOL & INISIALISASI
-      // ---------------------------------------------------------------------
-      dom.btnToggleDrawer.addEventListener('click', () => setDrawerOpen(!state.drawerOpen));
-      dom.btnCloseDrawer.addEventListener('click', () => setDrawerOpen(false));
-      dom.drawerBackdrop.addEventListener('click', () => setDrawerOpen(false));
-
-      dom.btnUpload.addEventListener('click', () => dom.fileInput.click());
-      dom.drawerUploadBtn.addEventListener('click', () => dom.fileInput.click());
-      dom.fileInput.addEventListener('change', (e) => handleUploadedFiles(e.target.files));
-
-      dom.drawerRestoreBtn.addEventListener('click', () => {
-        state.artifacts = SAMPLE_ARTIFACTS.map((item) => ({ ...item }));
-        state.currentIndex = 0;
-        renderCurrentArtifact(false);
-        setDrawerOpen(false);
-        showToast('Contoh artefak bawaan dimuat ulang', 'success');
-      });
-
-      dom.btnZoomIn.addEventListener('click', zoomIn);
-      dom.btnZoomOut.addEventListener('click', zoomOut);
-      dom.btnZoomReset.addEventListener('click', resetZoom);
-      dom.btnReload.addEventListener('click', reloadArtifact);
-      dom.btnAutoplay.addEventListener('click', () => toggleAutoplay(false));
-      dom.btnGestureMode.addEventListener('click', toggleGestureMode);
-      dom.btnHideHud.addEventListener('click', toggleHud);
-      dom.btnFullscreen.addEventListener('click', toggleFullscreen);
-
-      dom.miniPrev.addEventListener('click', () => goPrev(true));
-      dom.miniNext.addEventListener('click', () => goNext(true));
-      dom.miniToggleHud.addEventListener('click', () => setHudHidden(false));
-
-      document.addEventListener('fullscreenchange', syncFullscreenIcons);
-
-      // Inisialisasi awal aplikasi
-      renderCurrentArtifact(false);
-      setZoom(1, false);
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initViewerApp, { once: true });
+      } else {
+        initViewerApp();
+      }
     })();
   <\/script>
 </body>
