@@ -91,6 +91,14 @@
       padding: 0 !important;
     }
 
+    /* Pastikan overlay gestur tetap berada di atas viewport saat mode layar penuh */
+    html.is-fullscreen #gesture-overlay,
+    body.is-fullscreen #gesture-overlay,
+    html:fullscreen #gesture-overlay {
+      z-index: 10000 !important;
+      touch-action: none;
+    }
+
     /* Mode bersih tanpa tombol: sembunyikan seluruh kontrol/HUD */
     body.clean-view #top-hud,
     body.clean-view #minimal-floating-bar,
@@ -1145,37 +1153,8 @@ ${nonceComment}
         function zoomOut() {
           setZoom(state.zoom - 0.1, true);
         }
-
-        function resetZoom() {
-          setZoom(1, true);
-        }
-
-        // -------------------------------------------------------------------
-        // H. MODE BERSIH TANPA TOMBOL (HUD) & FULLSCREEN + FALLBACK
-        // -------------------------------------------------------------------
-        function applyHudVisibility() {
-          const isFullscreenActive = Boolean(document.fullscreenElement) || state.pseudoFullscreen;
-          const hideControls = state.hudHidden || isFullscreenActive;
-          document.body.classList.toggle('clean-view', hideControls);
-          if (dom.minimalFloatingBar) {
-            dom.minimalFloatingBar.classList.toggle('hidden', !state.hudHidden || isFullscreenActive);
-          }
-        }
-
-        function setHudHidden(hidden, notify = true) {
-          state.hudHidden = Boolean(hidden);
-          applyHudVisibility();
-          if (notify) {
-            showToast(
-              state.hudHidden
-                ? 'Mode bersih tanpa tombol aktif (tekan H atau Esc untuk kembali)'
-                : 'Tombol & HUD ditampilkan'
-            );
-          }
-        }
-
-        function toggleHud() {
-          setHudHidden(!state.hudHidden, true);
+        function isFullscreenActive() {
+          return Boolean(document.fullscreenElement || document.webkitFullscreenElement || state.pseudoFullscreen);
         }
 
         function setPseudoFullscreen(active) {
@@ -1188,8 +1167,12 @@ ${nonceComment}
 
         async function toggleFullscreen() {
           try {
-            if (document.fullscreenElement) {
-              await document.exitFullscreen();
+            if (document.fullscreenElement || document.webkitFullscreenElement) {
+              if (document.exitFullscreen) {
+                await document.exitFullscreen();
+              } else if (document.webkitExitFullscreen) {
+                document.webkitExitFullscreen();
+              }
               setPseudoFullscreen(false);
               return;
             }
@@ -1203,6 +1186,9 @@ ${nonceComment}
             const target = document.documentElement;
             if (target && typeof target.requestFullscreen === 'function') {
               await target.requestFullscreen();
+              setPseudoFullscreen(false);
+            } else if (target && typeof target.webkitRequestFullscreen === 'function') {
+              target.webkitRequestFullscreen();
               setPseudoFullscreen(false);
             } else {
               setPseudoFullscreen(true);
@@ -1222,9 +1208,15 @@ ${nonceComment}
         }
 
         function syncFullscreenIcons() {
-          const isFs = Boolean(document.fullscreenElement) || state.pseudoFullscreen;
+          const isFs = isFullscreenActive();
           if (dom.iconFsEnter) dom.iconFsEnter.classList.toggle('hidden', isFs);
           if (dom.iconFsExit) dom.iconFsExit.classList.toggle('hidden', !isFs);
+          if (isFs && !state.gestureMode && dom.gestureOverlay) {
+            // Tampilkan overlay gestur otomatis saat layar penuh agar geser/ketuk 2 jari langsung bekerja
+            dom.gestureOverlay.classList.remove('hidden');
+          } else if (!isFs && !state.gestureMode && dom.gestureOverlay) {
+            dom.gestureOverlay.classList.add('hidden');
+          }
           applyHudVisibility();
         }
 
@@ -1234,7 +1226,8 @@ ${nonceComment}
         function setGestureMode(active) {
           state.gestureMode = Boolean(active);
           if (dom.gestureOverlay) {
-            dom.gestureOverlay.classList.toggle('hidden', !state.gestureMode);
+            const shouldShow = state.gestureMode || isFullscreenActive();
+            dom.gestureOverlay.classList.toggle('hidden', !shouldShow);
           }
           if (dom.labelGesture) {
             dom.labelGesture.textContent = state.gestureMode ? 'Gestur: On' : 'Gestur: Off';
@@ -1264,64 +1257,59 @@ ${nonceComment}
           tracking: false
         };
 
+        function onGestureTouchStart(e) {
+          gestureTracker.maxTouches = Math.max(gestureTracker.maxTouches, e.touches.length);
+          if (e.touches.length >= 2) {
+            gestureTracker.startTime = Date.now();
+            gestureTracker.tracking = false;
+          } else if (e.touches.length === 1 && gestureTracker.maxTouches === 1) {
+            gestureTracker.startX = e.touches[0].clientX;
+            gestureTracker.startY = e.touches[0].clientY;
+            gestureTracker.startTime = Date.now();
+            gestureTracker.tracking = true;
+          }
+        }
+
+        function onGestureTouchEnd(e) {
+          // Ketukan dua jari singkat (< 300ms) untuk toggle Play / Pause
+          if (e.touches.length === 0 && gestureTracker.maxTouches >= 2) {
+            const elapsed = Date.now() - gestureTracker.startTime;
+            if (elapsed < 300) {
+              toggleAutoplay(true);
+            }
+            gestureTracker.maxTouches = 0;
+            gestureTracker.tracking = false;
+            return;
+          }
+
+          // Geser kiri (dx < -50px) -> maju; Geser kanan (dx > 50px) -> mundur
+          if (e.touches.length === 0 && gestureTracker.tracking && gestureTracker.maxTouches === 1) {
+            const changedTouch = e.changedTouches[0];
+            if (changedTouch) {
+              const dx = changedTouch.clientX - gestureTracker.startX;
+              const dy = changedTouch.clientY - gestureTracker.startY;
+              const absX = Math.abs(dx);
+              const absY = Math.abs(dy);
+
+              if (absX > 50 && absX > absY * 1.2) {
+                if (dx < -50) {
+                  goNext(true);
+                } else if (dx > 50) {
+                  goPrev(true);
+                }
+              }
+            }
+          }
+
+          if (e.touches.length === 0) {
+            gestureTracker.maxTouches = 0;
+            gestureTracker.tracking = false;
+          }
+        }
+
         if (dom.gestureOverlay) {
-          dom.gestureOverlay.addEventListener(
-            'touchstart',
-            (e) => {
-              gestureTracker.maxTouches = Math.max(gestureTracker.maxTouches, e.touches.length);
-              if (e.touches.length >= 2) {
-                gestureTracker.startTime = Date.now();
-                gestureTracker.tracking = false;
-              } else if (e.touches.length === 1 && gestureTracker.maxTouches === 1) {
-                gestureTracker.startX = e.touches[0].clientX;
-                gestureTracker.startY = e.touches[0].clientY;
-                gestureTracker.startTime = Date.now();
-                gestureTracker.tracking = true;
-              }
-            },
-            { passive: true }
-          );
-
-          dom.gestureOverlay.addEventListener(
-            'touchend',
-            (e) => {
-              // Ketukan dua jari singkat (< 300ms) untuk toggle Play / Pause
-              if (e.touches.length === 0 && gestureTracker.maxTouches >= 2) {
-                const elapsed = Date.now() - gestureTracker.startTime;
-                if (elapsed < 300) {
-                  toggleAutoplay(true);
-                }
-                gestureTracker.maxTouches = 0;
-                gestureTracker.tracking = false;
-                return;
-              }
-
-              // Geser kiri (dx < -50px) -> maju; Geser kanan (dx > 50px) -> mundur
-              if (e.touches.length === 0 && gestureTracker.tracking && gestureTracker.maxTouches === 1) {
-                const changedTouch = e.changedTouches[0];
-                if (changedTouch) {
-                  const dx = changedTouch.clientX - gestureTracker.startX;
-                  const dy = changedTouch.clientY - gestureTracker.startY;
-                  const absX = Math.abs(dx);
-                  const absY = Math.abs(dy);
-
-                  if (absX > 50 && absX > absY * 1.2) {
-                    if (dx < -50) {
-                      goNext(true);
-                    } else if (dx > 50) {
-                      goPrev(true);
-                    }
-                  }
-                }
-              }
-
-              if (e.touches.length === 0) {
-                gestureTracker.maxTouches = 0;
-                gestureTracker.tracking = false;
-              }
-            },
-            { passive: true }
-          );
+          dom.gestureOverlay.addEventListener('touchstart', onGestureTouchStart, { passive: true });
+          dom.gestureOverlay.addEventListener('touchend', onGestureTouchEnd, { passive: true });
 
           // Drag mouse di overlay gestur untuk pengujian swipe di desktop
           let mouseDownX = 0;
@@ -1341,6 +1329,26 @@ ${nonceComment}
             }
           });
         }
+
+        // Listener sentuh cadangan di level dokumen saat mode layar penuh aktif
+        document.addEventListener(
+          'touchstart',
+          (e) => {
+            if (!isFullscreenActive()) return;
+            if (dom.gestureOverlay && !dom.gestureOverlay.classList.contains('hidden')) return;
+            onGestureTouchStart(e);
+          },
+          { passive: true }
+        );
+        document.addEventListener(
+          'touchend',
+          (e) => {
+            if (!isFullscreenActive()) return;
+            if (dom.gestureOverlay && !dom.gestureOverlay.classList.contains('hidden')) return;
+            onGestureTouchEnd(e);
+          },
+          { passive: true }
+        );
 
         // -------------------------------------------------------------------
         // J. UPLOAD MULTI-FILE, PASTE KODE AI & DRAG-AND-DROP
@@ -1813,6 +1821,7 @@ ${nonceComment}
         if (dom.btnFullscreen) dom.btnFullscreen.addEventListener('click', toggleFullscreen);
 
         document.addEventListener('fullscreenchange', syncFullscreenIcons);
+        document.addEventListener('webkitfullscreenchange', syncFullscreenIcons);
 
         // Render artefak pertama dan set zoom 100%
         renderCurrentArtifact(false);
