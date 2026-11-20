@@ -101,6 +101,11 @@
       display: none !important;
     }
 
+    /* Pastikan elemen dengan atribut [hidden] selalu tersembunyi */
+    [hidden] {
+      display: none !important;
+    }
+
     /* Scrollbar tipis untuk daftar artefak */
     ::-webkit-scrollbar {
       width: 6px;
@@ -210,14 +215,14 @@
     </section>
 
     <!-- Top HUD Minimalis (dapat disembunyikan penuh dengan H / Esc / Mode Bersih) -->
-    <header id="top-hud" class="z-30 flex items-center justify-between gap-2 px-3 py-2.5 sm:px-5 bg-surface/90 backdrop-blur-md border-b border-white/10 transition-all duration-200">
+    <header id="top-hud" class="z-30 flex flex-wrap items-center justify-between gap-2 px-3 py-2 sm:px-5 bg-surface/95 backdrop-blur-md border-b border-white/10 transition-all duration-200">
       <!-- Kiri: Daftar Artefak & Judul Aktif -->
-      <div class="flex items-center gap-2 min-w-0">
+      <div class="flex items-center gap-2 min-w-0 flex-1 sm:flex-initial">
         <button
           id="btnList"
           type="button"
           title="Daftar Artefak (L)"
-          class="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-elevated hover:bg-white/10 active:scale-95 text-xs sm:text-sm font-medium text-slate-200 border border-white/10 transition cursor-pointer"
+          class="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-elevated hover:bg-white/10 active:scale-95 text-xs sm:text-sm font-medium text-slate-200 border border-white/10 transition cursor-pointer shrink-0"
         >
           <!-- Ikon daftar -->
           <svg class="w-4 h-4 text-sky-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -238,14 +243,14 @@
       </div>
 
       <!-- Kanan: Kontrol Zoom, Reload, Play/Pause, Mode Gestur, Upload, Paste, Bersih & Fullscreen -->
-      <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
+      <div class="flex flex-wrap items-center gap-1.5">
         <!-- Kontrol Zoom (langkah 10%, 50% - 250%) -->
-        <div class="flex items-center rounded-xl bg-elevated border border-white/10 overflow-hidden">
+        <div class="flex items-center rounded-xl bg-elevated border border-white/10 overflow-hidden shrink-0">
           <button
             id="btnZoomOut"
             type="button"
             title="Perkecil Zoom (-)"
-            class="p-2 hover:bg-white/10 active:bg-white/15 text-slate-300 transition cursor-pointer"
+            class="px-2 py-1.5 hover:bg-white/10 active:bg-white/15 text-slate-300 transition cursor-pointer"
           >
             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" d="M20 12H4" />
@@ -263,7 +268,7 @@
             id="btnZoomIn"
             type="button"
             title="Perbesar Zoom (+)"
-            class="p-2 hover:bg-white/10 active:bg-white/15 text-slate-300 transition cursor-pointer"
+            class="px-2 py-1.5 hover:bg-white/10 active:bg-white/15 text-slate-300 transition cursor-pointer"
           >
             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
@@ -276,12 +281,12 @@
           id="btnReload"
           type="button"
           title="Muat Ulang Artefak (R)"
-          class="p-2 sm:px-2.5 sm:py-2 rounded-xl bg-elevated hover:bg-white/10 active:scale-95 text-slate-200 border border-white/10 transition inline-flex items-center gap-1.5 text-xs font-medium cursor-pointer"
+          class="px-2.5 py-1.5 rounded-xl bg-elevated hover:bg-white/10 active:scale-95 text-slate-200 border border-white/10 transition inline-flex items-center gap-1.5 text-xs font-medium cursor-pointer shrink-0"
         >
           <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
           </svg>
-          <span class="hidden lg:inline">Reload</span>
+          <span class="hidden xl:inline">Reload</span>
         </button>
 
         <!-- Play / Pause Auto-Advance Artefak -->
@@ -289,7 +294,7 @@
           id="btnPlay"
           type="button"
           title="Play / Pause Auto-Advance (Space / Ketuk 2 Jari)"
-          class="p-2 sm:px-2.5 sm:py-2 rounded-xl bg-elevated hover:bg-white/10 active:scale-95 text-slate-200 border border-white/10 transition inline-flex items-center gap-1.5 text-xs font-medium cursor-pointer"
+          class="px-2.5 py-1.5 rounded-xl bg-elevated hover:bg-white/10 active:scale-95 text-slate-200 border border-white/10 transition inline-flex items-center gap-1.5 text-xs font-medium cursor-pointer shrink-0"
         >
           <svg id="icon-play" class="w-4 h-4 text-amber-400" fill="currentColor" viewBox="0 0 24 24">
             <path d="M8 5v14l11-7z" />
@@ -297,7 +302,7 @@
           <svg id="icon-pause" class="w-4 h-4 text-amber-400 hidden" fill="currentColor" viewBox="0 0 24 24">
             <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
           </svg>
-          <span id="label-autoplay" class="hidden lg:inline">Play</span>
+          <span id="label-autoplay" class="hidden xl:inline">Play</span>
         </button>
 
         <!-- Toggle Overlay Gestur Sentuh -->
@@ -305,12 +310,12 @@
           id="btnGesture"
           type="button"
           title="Mode Gestur Sentuh (G: Geser Kiri/Kanan & Ketuk 2 Jari)"
-          class="p-2 sm:px-2.5 sm:py-2 rounded-xl bg-elevated hover:bg-white/10 active:scale-95 text-slate-200 border border-white/10 transition inline-flex items-center gap-1.5 text-xs font-medium cursor-pointer"
+          class="px-2.5 py-1.5 rounded-xl bg-elevated hover:bg-white/10 active:scale-95 text-slate-200 border border-white/10 transition inline-flex items-center gap-1.5 text-xs font-medium cursor-pointer shrink-0"
         >
           <svg class="w-4 h-4 text-violet-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M7 11.5V6a1.5 1.5 0 113 0v4.5m0 0V4.5a1.5 1.5 0 113 0V11m0 0V6.5a1.5 1.5 0 113 0v5.5m0 0a1.5 1.5 0 013 0V15a6 6 0 01-6 6h-1.5A6.5 6.5 0 017 14.5v-3z" />
           </svg>
-          <span id="label-gesture" class="hidden xl:inline">Gestur: Off</span>
+          <span id="label-gesture" class="hidden 2xl:inline">Gestur: Off</span>
         </button>
 
         <!-- Paste / Tambah Kode HTML AI -->
@@ -318,12 +323,12 @@
           id="btnPaste"
           type="button"
           title="Tempel Kode HTML dari Claude / AI"
-          class="p-2 sm:px-2.5 sm:py-2 rounded-xl bg-elevated hover:bg-white/10 active:scale-95 text-slate-200 border border-white/10 transition inline-flex items-center gap-1.5 text-xs font-medium cursor-pointer"
+          class="px-2.5 py-1.5 rounded-xl bg-elevated hover:bg-white/10 active:scale-95 text-slate-200 border border-white/10 transition inline-flex items-center gap-1.5 text-xs font-medium cursor-pointer shrink-0"
         >
           <svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
           </svg>
-          <span class="hidden lg:inline">Paste</span>
+          <span class="hidden xl:inline">Paste</span>
         </button>
 
         <!-- Upload File HTML/HTM/SVG -->
@@ -331,45 +336,45 @@
           id="btnUpload"
           type="button"
           title="Unggah File HTML / HTM / SVG"
-          class="p-2 sm:px-3 sm:py-2 rounded-xl bg-sky-500 hover:bg-sky-400 active:scale-95 text-slate-950 font-semibold transition inline-flex items-center gap-1.5 text-xs shadow-sm shadow-sky-500/20 cursor-pointer"
+          class="px-3 py-1.5 rounded-xl bg-sky-500 hover:bg-sky-400 active:scale-95 text-slate-950 font-semibold transition inline-flex items-center gap-1.5 text-xs shadow-sm shadow-sky-500/20 cursor-pointer shrink-0"
         >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
           </svg>
-          <span class="hidden md:inline">Upload</span>
+          <span class="hidden sm:inline">Upload</span>
         </button>
-        <input id="file-input" type="file" accept=".html,.htm,.svg,text/html,image/svg+xml" multiple class="hidden" />
+        <input id="file-input" type="file" accept=".html,.htm,.xhtml,.svg,.txt,text/html,image/svg+xml" multiple class="hidden" />
 
-        <!-- ------------------------------------------------------------------- -->
-        <!-- E. KOMPATIBILITAS ARTEFAK HTML / SVG & RENDER IFRAME                -->
-        <!-- ------------------------------------------------------------------- -->
-        function injectedArtifactBridge() {
-          var pausedFlag = false;
-          var rafQueue = [];
-          var pausedAt = 0;
-          var offsetMs = 0;
-          var pausedAnimations = [];
-          var pausedMedia = [];
-          var touchState = null;
-          var pinchState = null;
+        <!-- Sembunyikan HUD (Mode Bersih Tanpa Tombol) -->
+        <button
+          id="btnHideHud"
+          type="button"
+          title="Mode Bersih Tanpa Tombol (H)"
+          class="px-2.5 py-1.5 rounded-xl bg-elevated hover:bg-white/10 active:scale-95 text-slate-200 border border-white/10 transition inline-flex items-center gap-1.5 text-xs font-medium cursor-pointer shrink-0"
+        >
+          <svg class="w-4 h-4 text-slate-300" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-5 0-9.27-3.11-11-7.5a11.72 11.72 0 013.168-4.477M6.343 6.343A9.972 9.972 0 0112 5c5 0 9.27 3.11 11 7.5a11.825 11.825 0 01-4.172 5.197M15 12a3 3 0 11-4.243-2.829M3 3l18 18" />
+          </svg>
+          <span class="hidden 2xl:inline">Bersih</span>
+        </button>
 
-          var nativeRaf = window.requestAnimationFrame.bind(window);
-          var nativePerfNow = performance.now.bind(performance);
-
-          function postToHost(payload) {
-            try {
-              parent.postMessage({ __pl: 1, m: payload }, '*');
-            } catch (e) {}
-          }
-
-          try {
-            performance.now = function () {
-              return (pausedFlag ? pausedAt : nativePerfNow()) - offsetMs;
-            };
-          } catch (e) {}
-
-          window.requestAnimationFrame = function (cb) {
-            return nativeRaf(function (ts) {
+        <!-- Fullscreen -->
+        <button
+          id="btnFullscreen"
+          type="button"
+          title="Layar Penuh (F)"
+          class="px-2.5 py-1.5 rounded-xl bg-elevated hover:bg-white/10 active:scale-95 text-slate-200 border border-white/10 transition inline-flex items-center gap-1.5 text-xs font-medium cursor-pointer shrink-0"
+        >
+          <svg id="icon-fs-enter" class="w-4 h-4 text-sky-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M8 3H5a2 2 0 00-2 2v3m18 0V5a2 2 0 00-2-2h-3m0 18h3a2 2 0 002-2v-3M3 16v3a2 2 0 002 2h3" />
+          </svg>
+          <svg id="icon-fs-exit" class="w-4 h-4 text-sky-400 hidden" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 9H4V4m0 5l6-6m6 6h5V4m0 5l-6-6M9 15H4v5m0-5l6 6m6-6h5v5m0-5l-6 6" />
+          </svg>
+          <span class="hidden 2xl:inline">Full</span>
+        </button>
+      </div>
+    </header>
               if (pausedFlag) {
                 rafQueue.push(cb);
               } else {
@@ -415,236 +420,235 @@
             rafQueue.splice(0).forEach(function (cb) {
               nativeRaf(function (ts) {
                 cb(ts - offsetMs);
-              });
-            });
-          }
+    <!-- Bottom Navigation Bar Minimalis (Sebelumnya / Berikutnya) -->
+    <footer id="bottom-nav-bar" class="z-30 flex items-center justify-between gap-3 px-4 py-2 bg-surface/95 backdrop-blur-md border-t border-white/10">
+      <button
+        id="btnPrev"
+        type="button"
+        title="Artefak Sebelumnya (←)"
+        class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-elevated hover:bg-white/10 active:scale-95 text-xs font-medium text-slate-200 border border-white/10 transition cursor-pointer"
+      >
+        <svg class="w-4 h-4 text-sky-400" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+        </svg>
+        <span>Sebelumnya</span>
+      </button>
 
-          function dispatchArrowKey(keyName) {
-            var codeMap = { ArrowRight: 39, ArrowLeft: 37 };
-            var kc = codeMap[keyName];
-            var targetEl = document.activeElement || document;
-            var downEv = new KeyboardEvent('keydown', { key: keyName, code: keyName, bubbles: true, cancelable: true });
-            Object.defineProperty(downEv, 'keyCode', { get: function () { return kc; } });
-            Object.defineProperty(downEv, 'which', { get: function () { return kc; } });
-            targetEl.dispatchEvent(downEv);
-            var upEv = new KeyboardEvent('keyup', { key: keyName, code: keyName, bubbles: true });
-            targetEl.dispatchEvent(upEv);
-          }
+      <button
+        id="btnShowHud"
+        type="button"
+        title="Tampilkan / Sembunyikan Kontrol (H)"
+        class="px-3 py-1 rounded-full bg-elevated/80 hover:bg-white/10 text-[11px] text-slate-400 border border-white/10 transition cursor-pointer"
+      >
+        Kontrol Aktif · Tekan H untuk mode bersih
+      </button>
 
-          addEventListener('message', function (ev) {
-            var data = ev.data;
-            if (!data || !data.__pl) return;
-            if (data.c === 'p') pauseArtifactRuntime();
-            else if (data.c === 'r') resumeArtifactRuntime();
-            else if (data.c === 'k') dispatchArrowKey(data.k);
-          });
+      <button
+        id="btnNext"
+        type="button"
+        title="Artefak Berikutnya (→)"
+        class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-elevated hover:bg-white/10 active:scale-95 text-xs font-medium text-slate-200 border border-white/10 transition cursor-pointer"
+      >
+        <span>Berikutnya</span>
+        <svg class="w-4 h-4 text-sky-400" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+        </svg>
+      </button>
+    </footer>
 
-          // Polyfill penyimpanan untuk artefak AI (window.storage & localStorage/sessionStorage)
-          function createMemoryStorage() {
-            var store = {};
-            return {
-              getItem: function (k) { return k in store ? store[k] : null; },
-              setItem: function (k, v) { store[k] = String(v); },
-              removeItem: function (k) { delete store[k]; },
-              clear: function () { store = {}; },
-              key: function (i) { return Object.keys(store)[i] || null; },
-              get length() { return Object.keys(store).length; }
-            };
-          }
+    <!-- Bar Melayang Minimal saat Mode Bersih Aktif -->
+    <div id="minimal-floating-bar" class="hidden fixed bottom-4 right-4 z-40">
+      <button
+        type="button"
+        data-restore-hud="true"
+        class="px-3 py-1.5 rounded-full bg-surface/90 hover:bg-elevated text-slate-200 border border-white/15 text-xs font-medium shadow-lg backdrop-blur-md transition cursor-pointer"
+      >
+        Tampilkan Kontrol (H)
+      </button>
+    </div>
 
-          ['localStorage', 'sessionStorage'].forEach(function (storageName) {
-            try {
-              Object.defineProperty(window, storageName, { value: createMemoryStorage(), configurable: true });
-            } catch (e) {}
-          });
+    <!-- Drawer Daftar Artefak -->
+    <div id="drawer-backdrop" class="fixed inset-0 z-40 bg-black/60 backdrop-blur-xs hidden"></div>
+    <aside id="artifact-drawer" class="fixed top-0 left-0 bottom-0 z-50 w-80 max-w-[85vw] bg-surface border-r border-white/10 flex flex-col -translate-x-full transition-transform duration-200">
+      <div class="flex items-center justify-between px-4 py-3 border-b border-white/10">
+        <span class="text-sm font-semibold text-slate-100">Daftar Artefak</span>
+        <button id="btn-close-drawer" type="button" class="p-1.5 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition cursor-pointer">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      <div id="artifact-list" class="flex-1 overflow-y-auto p-3 space-y-2"></div>
+      <div class="p-3 border-t border-white/10 flex items-center gap-2">
+        <button id="drawer-upload-btn" type="button" class="flex-1 px-3 py-2 rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 text-xs font-semibold transition cursor-pointer">
+          Unggah File
+        </button>
+        <button id="drawer-restore-samples-btn" type="button" class="px-3 py-2 rounded-xl bg-elevated hover:bg-white/10 text-slate-200 border border-white/10 text-xs font-medium transition cursor-pointer">
+          Contoh
+        </button>
+      </div>
+    </aside>
 
-          var aiStore = {};
-          if (!window.storage) {
-            window.storage = {
-              get: async function (k) {
-                if (!(k in aiStore)) throw new Error('Key not found');
-                return { key: k, value: aiStore[k], shared: false };
-              },
-              set: async function (k, v) {
-                aiStore[k] = v;
-                return { key: k, value: v, shared: false };
-              },
-              delete: async function (k) {
-                var existed = k in aiStore;
-                delete aiStore[k];
-                return { key: k, deleted: existed, shared: false };
-              },
-              list: async function (prefix) {
-                return {
-                  keys: Object.keys(aiStore).filter(function (k) {
-                    return !prefix || k.indexOf(prefix) === 0;
-                  }),
-                  prefix: prefix,
-                  shared: false
-                };
-              }
-            };
-          }
+    <!-- Modal Tempel Kode HTML / AI -->
+    <div id="paste-modal" class="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs hidden flex items-center justify-center p-4">
+      <div class="w-full max-w-lg rounded-2xl bg-surface border border-white/15 p-5 shadow-2xl space-y-3">
+        <div class="flex items-center justify-between">
+          <h3 class="text-sm font-semibold text-slate-100">Tempel Kode HTML / SVG</h3>
+          <button id="btn-close-paste" type="button" class="p-1.5 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition cursor-pointer">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <input
+          id="paste-title-input"
+          type="text"
+          placeholder="Judul artefak (opsional)"
+          class="w-full px-3 py-2 rounded-xl bg-elevated border border-white/10 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-sky-400"
+        />
+        <textarea
+          id="paste-code-textarea"
+          rows="8"
+          placeholder="Tempel kode HTML, SVG, atau komponen AI di sini..."
+          class="w-full px-3 py-2 rounded-xl bg-elevated border border-white/10 text-xs font-mono text-slate-100 placeholder-slate-500 focus:outline-none focus:border-sky-400"
+        ></textarea>
+        <p id="paste-error-msg" class="text-xs text-rose-400 hidden"></p>
+        <div class="flex justify-end gap-2 pt-1">
+          <button id="btn-cancel-paste" type="button" class="px-4 py-2 rounded-xl bg-elevated hover:bg-white/10 text-xs font-medium text-slate-300 transition cursor-pointer">
+            Batal
+          </button>
+          <button id="btn-submit-paste" type="button" class="px-4 py-2 rounded-xl bg-sky-500 hover:bg-sky-400 text-xs font-semibold text-slate-950 transition cursor-pointer">
+            Tampilkan
+          </button>
+        </div>
+      </div>
+    </div>
 
-          function touchDistance(ev) {
-            var a = ev.touches[0];
-            var b = ev.touches[1];
-            return Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
-          }
+    <!-- Container Toast & Indikator Tengah -->
+    <div id="toast-container" class="fixed bottom-16 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center gap-2 pointer-events-none"></div>
+    <div id="center-action-indicator" class="fixed inset-0 z-40 flex items-center justify-center pointer-events-none hidden">
+      <div id="center-action-pill" class="px-4 py-2.5 rounded-2xl bg-surface/90 border border-white/15 backdrop-blur-md flex items-center gap-2 text-xs font-semibold text-white shadow-xl">
+        <span id="center-action-icon"></span>
+        <span id="center-action-text"></span>
+      </div>
+    </div>
+  </main>
 
-          addEventListener('touchstart', function (ev) {
-            var count = ev.touches.length;
-            if (!touchState || count > touchState.n) {
-              touchState = {
-                n: count,
-                t: touchState ? touchState.t : Date.now(),
-                x: ev.touches[0].clientX,
-                y: ev.touches[0].clientY,
-                mv: touchState ? touchState.mv : 0,
-                dx: 0,
-                dy: 0
-              };
-            }
-            if (count === 2) {
-              pinchState = { d: touchDistance(ev) };
-            }
-          }, { passive: true });
-
-          addEventListener('touchmove', function (ev) {
-            if (!touchState) return;
-            var first = ev.touches[0];
-            touchState.dx = first.clientX - touchState.x;
-            touchState.dy = first.clientY - touchState.y;
-            if (Math.abs(touchState.dx) + Math.abs(touchState.dy) > 14) {
-              touchState.mv = 1;
-            }
-            if (ev.touches.length === 2 && pinchState) {
-              var ratio = touchDistance(ev) / pinchState.d;
-              if (Math.abs(ratio - 1) > 0.08) {
-                touchState.mv = 1;
-                postToHost({ zr: ratio });
-              }
-            }
-          }, { passive: true });
-
-          addEventListener('touchend', function (ev) {
-            if (!touchState || ev.touches.length) return;
-            var elapsed = Date.now() - touchState.t;
-            if (pinchState) {
-              postToHost({ ze: 1 });
-              pinchState = null;
-            }
-            if (!touchState.mv && elapsed < 350 && touchState.n >= 2) {
-              postToHost({ tap: touchState.n });
-            } else if (
-              touchState.n === 1 &&
-              elapsed < 700 &&
-              Math.abs(touchState.dx) > 60 &&
-              Math.abs(touchState.dx) > Math.abs(touchState.dy) * 1.5
-            ) {
-              postToHost({ sw: touchState.dx < 0 ? 1 : -1 });
-            }
-            touchState = null;
-          }, { passive: true });
-
-          addEventListener('touchcancel', function () {
-            touchState = null;
-            pinchState = null;
-          }, { passive: true });
-
-          var hotkeys = 'fFkKrRoO+=-_0[]hHgGlL ';
-          addEventListener('keydown', function (ev) {
-            if (ev.ctrlKey || ev.metaKey || ev.altKey) return;
-            var tgt = ev.target;
-            if (tgt && (/^(INPUT|TEXTAREA|SELECT)$/.test(tgt.tagName) || tgt.isContentEditable)) return;
-            if (ev.key.length === 1 && hotkeys.indexOf(ev.key) > -1) {
-              postToHost({ k: ev.key });
-            }
-          });
-
-          addEventListener('wheel', function (ev) {
-            if (ev.ctrlKey) {
-              ev.preventDefault();
-              postToHost({ zw: ev.deltaY });
-            }
-          }, { passive: false });
-        }
-
-        var INJECT_TAG = '<script>(' + injectedArtifactBridge.toString() + ')()<\/script>';
-
-        function normalizeArtifactHtml(rawContent, title = 'Artifact', reloadNonce = 0) {
-          const trimmed = (rawContent || '').trim();
-          const nonceComment = `<!-- reload:${reloadNonce} -->`;
-
-          if (!trimmed) {
-            return `<!DOCTYPE html><html><body style="font-family:sans-serif;padding:24px;color:#334155;">Artefak kosong. ${nonceComment}</body></html>`;
-          }
-
-          let doc = trimmed;
-          if (/^<svg[\s>]/i.test(trimmed) || trimmed.startsWith('<?xml')) {
-            doc = `<!DOCTYPE html>
+  <script>
+    (function () {
+      function initViewerApp() {
+        // -------------------------------------------------------------------
+        // A. CONTOH ARTEFAK BAWAAN
+        // -------------------------------------------------------------------
+        const SAMPLE_ARTIFACTS = [
+          {
+            id: 'sample-particles',
+            title: 'Interactive Particle Field',
+            source: 'Contoh Bawaan • Canvas 2D',
+            html: `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>${escapeHtml(title)}</title>
   <style>
     html, body {
       margin: 0;
       padding: 0;
       width: 100%;
       height: 100%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: #0b0f19;
-      overflow: auto;
+      overflow: hidden;
+      background: #070b14;
+      font-family: system-ui, -apple-system, sans-serif;
     }
-    svg {
-      max-width: 100%;
-      max-height: 100%;
-      width: auto;
-      height: auto;
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
     }
+    .hud {
+      position: fixed;
+      left: 16px;
+      bottom: 16px;
+      padding: 10px 14px;
+      border-radius: 12px;
+      background: rgba(15, 23, 42, 0.72);
+      border: 1px solid rgba(148, 163, 184, 0.22);
+      color: #e2e8f0;
+      font-size: 12px;
+      backdrop-filter: blur(8px);
+      pointer-events: none;
+    }
+    .hud strong { color: #38bdf8; }
   </style>
 </head>
-<body>${trimmed}</body>
-</html>`;
-          } else if (!/<!doctype\s+html/i.test(trimmed) && !/<html[\s>]/i.test(trimmed)) {
-            doc = `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>${escapeHtml(title)}</title>
-  <script src="https://cdn.tailwindcss.com"><\/script>
-</head>
-<body class="bg-white text-slate-900 antialiased">
-${trimmed}
-</body>
-</html>`;
-          }
+<body>
+  <canvas id="c"></canvas>
+  <div class="hud">
+    <strong>Interactive Particle Field</strong> — Gerakkan kursor atau sentuh layar; klik untuk memicu gelombang.
+  </div>
+  <script>
+    const canvas = document.getElementById('c');
+    const ctx = canvas.getContext('2d');
+    let w = 0, h = 0;
+    const pointer = { x: -9999, y: -9999, active: false };
+    let pulse = 0;
+    const particles = [];
+    const COUNT = 85;
 
-          let injectSnippet = INJECT_TAG;
-          if (!/<meta[^>]+viewport/i.test(doc)) {
-            injectSnippet = '<meta name="viewport" content="width=device-width, initial-scale=1.0">' + injectSnippet;
-          }
+    function resize() {
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      w = window.innerWidth;
+      h = window.innerHeight;
+      canvas.width = Math.floor(w * dpr);
+      canvas.height = Math.floor(h * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
 
-          if (/<head(\s[^>]*)?>/i.test(doc)) {
-            doc = doc.replace(/<head(\s[^>]*)?>/i, function (m) {
-              return m + injectSnippet;
-            });
-          } else if (/<html(\s[^>]*)?>/i.test(doc)) {
-            doc = doc.replace(/<html(\s[^>]*)?>/i, function (m) {
-              return m + '<head>' + injectSnippet + '</head>';
-            });
-          } else {
-            doc = injectSnippet + doc;
-          }
+    function init() {
+      resize();
+      particles.length = 0;
+      for (let i = 0; i < COUNT; i++) {
+        particles.push({
+          x: Math.random() * w,
+          y: Math.random() * h,
+          vx: (Math.random() - 0.5) * 1.1,
+          vy: (Math.random() - 0.5) * 1.1,
+          r: 1.8 + Math.random() * 2.4,
+          hue: 185 + Math.random() * 65
+        });
+      }
+    }
 
-          return /<\/body>/i.test(doc)
-            ? doc.replace(/<\/body>/i, `${nonceComment}</body>`)
-            : `${doc}${nonceComment}`;
+    window.addEventListener('resize', resize);
+    window.addEventListener('pointermove', (e) => {
+      pointer.x = e.clientX;
+      pointer.y = e.clientY;
+      pointer.active = true;
+    });
+    window.addEventListener('pointerdown', (e) => {
+      pointer.x = e.clientX;
+      pointer.y = e.clientY;
+      pointer.active = true;
+      pulse = 1;
+    });
+
+    function loop() {
+      ctx.fillStyle = 'rgba(7, 11, 20, 0.22)';
+      ctx.fillRect(0, 0, w, h);
+
+      if (pulse > 0.01) pulse *= 0.94;
+
+      for (let i = 0; i < particles.length; i++) {
+        const p = particles[i];
+        if (pointer.active) {
+          const dx = pointer.x - p.x;
+          const dy = pointer.y - p.y;
+          const dist = Math.hypot(dx, dy) || 1;
+          if (dist < 150) {
+            const force = ((150 - dist) / 150) * 0.045;
+            p.vx += (dx / dist) * force;
+            p.vy += (dy / dist) * force;
+          }
         }
 
         if (pulse > 0.05) {
@@ -886,6 +890,7 @@ ${trimmed}
           btnHideHud: document.getElementById('btnHideHud'),
           btnFullscreen: document.getElementById('btnFullscreen'),
           btnShowHud: document.getElementById('btnShowHud'),
+          restoreHudButtons: document.querySelectorAll('[data-restore-hud="true"]'),
           iconFsEnter: document.getElementById('icon-fs-enter'),
           iconFsExit: document.getElementById('icon-fs-exit')
         };
@@ -1381,10 +1386,24 @@ ${nonceComment}
           return (
             name.endsWith('.html') ||
             name.endsWith('.htm') ||
+            name.endsWith('.xhtml') ||
             name.endsWith('.svg') ||
-            type === 'text/html' ||
+            name.endsWith('.txt') ||
+            type.startsWith('text/') ||
             type === 'image/svg+xml'
           );
+        }
+
+        async function readSingleArtifactFile(file) {
+          if (typeof file.text === 'function') {
+            return await file.text();
+          }
+          return await new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(typeof reader.result === 'string' ? reader.result : '');
+            reader.onerror = () => resolve('');
+            reader.readAsText(file);
+          });
         }
 
         async function handleUploadedFiles(fileList) {
@@ -1394,50 +1413,46 @@ ${nonceComment}
 
             const validFiles = files.filter(isSupportedArtifactFile);
             if (!validFiles.length) {
-              showToast('Pilih file berformat .html, .htm, atau .svg', 'warn');
+              showToast('Pilih file berformat .html, .htm, .svg, atau teks kode', 'warn');
               return;
             }
 
             const newItems = await Promise.all(
-              validFiles.map(
-                (file, idx) =>
-                  new Promise((resolve) => {
-                    const reader = new FileReader();
-                    reader.onload = () => {
-                      const cleanName = file.name.replace(/\.(html|htm|svg)$/i, '');
-                      resolve({
-                        id: `uploaded-${Date.now()}-${idx}-${Math.random().toString(36).slice(2, 7)}`,
-                        title: cleanName || file.name,
-                        source: `File Unggahan • ${file.name}`,
-                        html: typeof reader.result === 'string' ? reader.result : ''
-                      });
-                    };
-                    reader.onerror = () => resolve(null);
-                    reader.readAsText(file);
-                  })
-              )
+              validFiles.map(async (file, idx) => {
+                const content = await readSingleArtifactFile(file);
+                if (!content.trim()) return null;
+                const cleanName = file.name.replace(/\.(html|htm|xhtml|svg|txt)$/i, '');
+                return {
+                  id: `uploaded-${Date.now()}-${idx}-${Math.random().toString(36).slice(2, 7)}`,
+                  title: cleanName || file.name,
+                  source: `File Impor • ${file.name}`,
+                  html: content
+                };
+              })
             );
 
             const filtered = newItems.filter(Boolean);
             if (!filtered.length) {
-              showToast('Gagal membaca isi file', 'error');
+              showToast('File kosong atau gagal dibaca', 'error');
               return;
             }
 
             const firstNewIndex = state.artifacts.length;
             state.artifacts.push(...filtered);
             state.currentIndex = firstNewIndex;
+            setHomeScreenVisible(false);
+            setDrawerOpen(false);
             renderCurrentArtifact(false);
 
             showToast(
               filtered.length === 1
-                ? `Memuat "${filtered[0].title}"`
-                : `${filtered.length} artefak berhasil ditambahkan`,
+                ? `Mengimpor "${filtered[0].title}"`
+                : `${filtered.length} file artefak berhasil diimpor`,
               'success'
             );
           } catch (err) {
             console.error('Upload error:', err);
-            showToast('Terjadi kesalahan saat mengunggah file', 'error');
+            showToast('Terjadi kesalahan saat mengimpor file', 'error');
           } finally {
             if (dom.fileInput) dom.fileInput.value = '';
           }
@@ -1935,7 +1950,12 @@ ${nonceComment}
 
         if (dom.btnGesture) dom.btnGesture.addEventListener('click', toggleGestureMode);
         if (dom.btnHideHud) dom.btnHideHud.addEventListener('click', toggleHud);
-        if (dom.btnShowHud) dom.btnShowHud.addEventListener('click', () => setHudHidden(false, true));
+        if (dom.btnShowHud) dom.btnShowHud.addEventListener('click', toggleHud);
+        if (dom.restoreHudButtons && dom.restoreHudButtons.length) {
+          dom.restoreHudButtons.forEach((btn) => {
+            btn.addEventListener('click', () => setHudHidden(false, true));
+          });
+        }
         if (dom.btnFullscreen) dom.btnFullscreen.addEventListener('click', toggleFullscreen);
 
         document.addEventListener('fullscreenchange', syncFullscreenIcons);
