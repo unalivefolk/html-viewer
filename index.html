@@ -171,12 +171,31 @@
       }
     }
 
+    @keyframes countdownPop {
+      0% {
+        opacity: 0.35;
+        transform: scale(0.82);
+      }
+      45% {
+        opacity: 1;
+        transform: scale(1.06);
+      }
+      100% {
+        opacity: 0.92;
+        transform: scale(1);
+      }
+    }
+
     .toast-anim {
       animation: fadeSlideUp 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     }
 
     .action-badge-anim {
       animation: pulsePing 0.75s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    .countdown-num-anim {
+      animation: countdownPop 0.45s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
     /* Transformasi zoom pada wrapper iframe */
@@ -250,7 +269,7 @@
         </div>
       </div>
 
-      <!-- Kanan: Kontrol Zoom, Reload, Play/Pause, Mode Gestur, Upload, Paste, Bersih & Fullscreen -->
+      <!-- Kanan: Kontrol Zoom, Reload, Play/Pause, Hitung Mundur, Mode Gestur, Upload, Paste, Bersih & Fullscreen -->
       <div class="flex flex-wrap items-center gap-1.5">
         <!-- Kontrol Zoom (langkah 10%, 50% - 250%) -->
         <div class="flex items-center rounded-xl bg-elevated border border-white/10 overflow-hidden shrink-0">
@@ -311,6 +330,19 @@
             <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
           </svg>
           <span id="label-autoplay" class="hidden xl:inline">Play</span>
+        </button>
+
+        <!-- Toggle Mode Hitung Mundur sebelum Play / Jeda Rekam Layar -->
+        <button
+          id="btnCountdown"
+          type="button"
+          title="Mode Hitung Mundur Saat Play (C: Siklus 3s / 5s / 10s / Off)"
+          class="px-2.5 py-1.5 rounded-xl bg-elevated hover:bg-white/10 active:scale-95 text-slate-200 border border-white/10 transition inline-flex items-center gap-1.5 text-xs font-medium cursor-pointer shrink-0"
+        >
+          <svg class="w-4 h-4 text-rose-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 2m6-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <span id="label-countdown" class="hidden 2xl:inline">Hitung: 5s</span>
         </button>
 
         <!-- Toggle Overlay Gestur Sentuh -->
@@ -384,7 +416,7 @@
       </div>
     </header>
 
-    <!-- Area Tengah: Stage Artefak + Overlay Gestur Sentuh + Dropzone -->
+    <!-- Area Tengah: Stage Artefak + Overlay Hitung Mundur + Gestur Sentuh + Dropzone -->
     <div id="artifact-viewport" class="relative flex-1 w-full h-full overflow-hidden flex items-center justify-center bg-obsidian">
       <div id="artifact-zoom-stage" class="w-full h-full flex items-center justify-center">
         <iframe
@@ -393,6 +425,42 @@
           sandbox="allow-scripts allow-forms allow-modals allow-popups allow-pointer-lock allow-downloads"
           class="w-full h-full border-0 bg-white"
         ></iframe>
+      </div>
+
+      <!-- Overlay Hitung Mundur Rekam Layar / Jeda Sebelum Play -->
+      <div
+        id="countdown-overlay"
+        hidden
+        class="fixed inset-0 z-40 flex items-center justify-center bg-obsidian/85 backdrop-blur-md p-6"
+      >
+        <div class="w-full max-w-sm rounded-3xl bg-surface/95 border border-white/15 p-7 text-center shadow-2xl space-y-5">
+          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-500/15 border border-rose-400/30 text-rose-300 text-[11px] font-semibold uppercase tracking-wider">
+            <span class="w-2 h-2 rounded-full bg-rose-400 animate-pulse"></span>
+            Jeda Rekam Layar
+          </div>
+          <div id="countdown-number" class="countdown-num-anim text-7xl font-bold tracking-tight text-white tabular-nums">
+            5
+          </div>
+          <p id="countdown-subtext" class="text-xs text-slate-400">
+            Konten akan mulai diputar otomatis setelah hitungan selesai
+          </p>
+          <div class="flex items-center justify-center gap-2 pt-1">
+            <button
+              id="btn-countdown-skip"
+              type="button"
+              class="px-4 py-2 rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 text-xs font-semibold transition cursor-pointer"
+            >
+              Mulai Sekarang
+            </button>
+            <button
+              id="btn-countdown-cancel"
+              type="button"
+              class="px-4 py-2 rounded-xl bg-elevated hover:bg-white/10 text-slate-200 border border-white/10 text-xs font-medium transition cursor-pointer"
+            >
+              Batal (Esc)
+            </button>
+          </div>
+        </div>
       </div>
 
       <!-- Overlay Gestur Sentuh (aktif saat tombol Gestur dinyalakan / tekan G) -->
@@ -495,6 +563,7 @@
         // A. KONSTANTA SKRIP
         // -------------------------------------------------------------------
         const SCRIPT_CLOSE = '</' + 'script>';
+        const COUNTDOWN_PRESETS = [5, 10, 3, 0]; // 0 berarti nonaktif (langsung play)
 
         // -------------------------------------------------------------------
         // B. STATE APLIKASI
@@ -506,6 +575,10 @@
           autoplay: false,
           autoplayIntervalMs: 6000,
           autoplayTimer: null,
+          countdownSeconds: 5,
+          countdownActive: false,
+          countdownRemaining: 0,
+          countdownInterval: null,
           gestureMode: false,
           hudHidden: false,
           pseudoFullscreen: false,
@@ -527,6 +600,13 @@
           zoomStage: document.getElementById('artifact-zoom-stage'),
           frame: document.getElementById('artifact-frame'),
           gestureOverlay: document.getElementById('gesture-overlay'),
+          countdownOverlay: document.getElementById('countdown-overlay'),
+          countdownNumber: document.getElementById('countdown-number'),
+          countdownSubtext: document.getElementById('countdown-subtext'),
+          btnCountdown: document.getElementById('btnCountdown'),
+          labelCountdown: document.getElementById('label-countdown'),
+          btnCountdownSkip: document.getElementById('btn-countdown-skip'),
+          btnCountdownCancel: document.getElementById('btn-countdown-cancel'),
           centerIndicator: document.getElementById('center-action-indicator'),
           centerIcon: document.getElementById('center-action-icon'),
           centerText: document.getElementById('center-action-text'),
@@ -745,7 +825,7 @@ ${nonceComment}
         }
 
         // -------------------------------------------------------------------
-        // F. NAVIGASI ARTEFAK & PLAY / PAUSE AUTO-ADVANCE
+        // F. NAVIGASI ARTEFAK, HITUNG MUNDUR & PLAY / PAUSE AUTO-ADVANCE
         // -------------------------------------------------------------------
         function goNext(fromGesture = false) {
           if (state.artifacts.length <= 1) {
@@ -792,24 +872,121 @@ ${nonceComment}
           }
         }
 
+        function clearCountdownTimer() {
+          if (state.countdownInterval) {
+            clearInterval(state.countdownInterval);
+            state.countdownInterval = null;
+          }
+          state.countdownActive = false;
+          if (dom.countdownOverlay) {
+            dom.countdownOverlay.hidden = true;
+          }
+        }
+
+        function renderCountdownNumber(num) {
+          if (!dom.countdownNumber) return;
+          dom.countdownNumber.textContent = String(num);
+          dom.countdownNumber.classList.remove('countdown-num-anim');
+          void dom.countdownNumber.offsetWidth;
+          dom.countdownNumber.classList.add('countdown-num-anim');
+        }
+
+        function beginAutoplayNow(fromGesture = false) {
+          clearCountdownTimer();
+          state.autoplay = true;
+          updateAutoplayUI();
+          startAutoplayTimer();
+          triggerCenterIndicator(
+            'Play Auto-Advance Aktif',
+            '<svg class="w-4 h-4 text-amber-400" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>'
+          );
+          if (!fromGesture) showToast('Play otomatis dimulai (tiap 6 detik)', 'info');
+        }
+
+        function startCountdownBeforePlay(fromGesture = false) {
+          clearCountdownTimer();
+          state.countdownActive = true;
+          state.countdownRemaining = state.countdownSeconds;
+          if (dom.countdownOverlay) {
+            dom.countdownOverlay.hidden = false;
+          }
+          if (dom.countdownSubtext) {
+            const activeItem = state.artifacts[state.currentIndex];
+            dom.countdownSubtext.textContent = activeItem
+              ? `Siap rekam layar: "${activeItem.title}" mulai dalam ${state.countdownRemaining}d`
+              : `Konten akan mulai diputar dalam ${state.countdownRemaining}d`;
+          }
+          renderCountdownNumber(state.countdownRemaining);
+
+          state.countdownInterval = setInterval(() => {
+            state.countdownRemaining -= 1;
+            if (state.countdownRemaining > 0) {
+              renderCountdownNumber(state.countdownRemaining);
+              if (dom.countdownSubtext) {
+                const activeItem = state.artifacts[state.currentIndex];
+                dom.countdownSubtext.textContent = activeItem
+                  ? `Siap rekam layar: "${activeItem.title}" mulai dalam ${state.countdownRemaining}d`
+                  : `Konten akan mulai diputar dalam ${state.countdownRemaining}d`;
+              }
+            } else {
+              beginAutoplayNow(fromGesture);
+            }
+          }, 1000);
+        }
+
+        function cancelCountdown() {
+          if (!state.countdownActive) return;
+          clearCountdownTimer();
+          updateAutoplayUI();
+          showToast('Hitung mundur dibatalkan', 'warn');
+        }
+
+        function cycleCountdownPreset() {
+          const idx = COUNTDOWN_PRESETS.indexOf(state.countdownSeconds);
+          const next = COUNTDOWN_PRESETS[(idx + 1) % COUNTDOWN_PRESETS.length];
+          state.countdownSeconds = next;
+          updateCountdownUI();
+          showToast(
+            next > 0
+              ? `Jeda hitung mundur sebelum play: ${next} detik`
+              : 'Hitung mundur sebelum play dinonaktifkan',
+            'info'
+          );
+        }
+
+        function updateCountdownUI() {
+          if (dom.labelCountdown) {
+            dom.labelCountdown.textContent = state.countdownSeconds > 0 ? `Hitung: ${state.countdownSeconds}s` : 'Hitung: Off';
+          }
+          if (dom.btnCountdown) {
+            const enabled = state.countdownSeconds > 0;
+            dom.btnCountdown.classList.toggle('bg-rose-500/15', enabled);
+            dom.btnCountdown.classList.toggle('border-rose-400/40', enabled);
+            dom.btnCountdown.classList.toggle('text-rose-200', enabled);
+          }
+        }
+
         function toggleAutoplay(fromGesture = false) {
+          if (state.countdownActive) {
+            cancelCountdown();
+            return;
+          }
+
           if (!state.autoplay && state.artifacts.length <= 1) {
             showToast('Tambahkan minimal 2 artefak untuk mode Play/Pause otomatis', 'warn');
             return;
           }
 
-          state.autoplay = !state.autoplay;
-          updateAutoplayUI();
-
-          if (state.autoplay) {
-            startAutoplayTimer();
-            triggerCenterIndicator(
-              'Play Auto-Advance Aktif',
-              '<svg class="w-4 h-4 text-amber-400" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>'
-            );
-            if (!fromGesture) showToast('Play otomatis diaktifkan (tiap 6 detik)', 'info');
+          if (!state.autoplay) {
+            if (state.countdownSeconds > 0) {
+              startCountdownBeforePlay(fromGesture);
+            } else {
+              beginAutoplayNow(fromGesture);
+            }
           } else {
+            state.autoplay = false;
             stopAutoplayTimer();
+            updateAutoplayUI();
             triggerCenterIndicator(
               'Pause Auto-Advance',
               '<svg class="w-4 h-4 text-amber-400" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>'
@@ -819,11 +996,12 @@ ${nonceComment}
         }
 
         function updateAutoplayUI() {
-          dom.iconPlay.classList.toggle('hidden', state.autoplay);
-          dom.iconPause.classList.toggle('hidden', !state.autoplay);
-          dom.labelAutoplay.textContent = state.autoplay ? 'Pause' : 'Play';
-          dom.btnPlay.classList.toggle('ring-1', state.autoplay);
-          dom.btnPlay.classList.toggle('ring-amber-400/60', state.autoplay);
+          const activeOrCounting = state.autoplay || state.countdownActive;
+          dom.iconPlay.classList.toggle('hidden', activeOrCounting);
+          dom.iconPause.classList.toggle('hidden', !activeOrCounting);
+          dom.labelAutoplay.textContent = state.countdownActive ? `${state.countdownRemaining}s` : (state.autoplay ? 'Pause' : 'Play');
+          dom.btnPlay.classList.toggle('ring-1', activeOrCounting);
+          dom.btnPlay.classList.toggle('ring-amber-400/60', activeOrCounting);
         }
 
         // -------------------------------------------------------------------
@@ -1310,8 +1488,11 @@ ${nonceComment}
               if (state.currentIndex >= state.artifacts.length) {
                 state.currentIndex = Math.max(0, state.artifacts.length - 1);
               }
-              if (state.artifacts.length <= 1 && state.autoplay) {
-                toggleAutoplay(false);
+              if (state.artifacts.length <= 1 && (state.autoplay || state.countdownActive)) {
+                clearCountdownTimer();
+                state.autoplay = false;
+                stopAutoplayTimer();
+                updateAutoplayUI();
               }
               renderCurrentArtifact(false);
               showToast('Artefak dihapus dari daftar');
@@ -1382,6 +1563,10 @@ ${nonceComment}
             case 'K':
               toggleAutoplay(true);
               return true;
+            case 'c':
+            case 'C':
+              cycleCountdownPreset();
+              return true;
             case '+':
             case '=':
               zoomIn();
@@ -1428,6 +1613,10 @@ ${nonceComment}
           const isEditable = tag === 'input' || tag === 'textarea' || (e.target && e.target.isContentEditable);
 
           if (e.key === 'Escape') {
+            if (state.countdownActive) {
+              cancelCountdown();
+              return;
+            }
             if (state.pasteModalOpen) {
               setPasteModalOpen(false);
               return;
@@ -1497,6 +1686,9 @@ ${nonceComment}
         if (homePasteBtn) homePasteBtn.addEventListener('click', () => setPasteModalOpen(true));
 
         if (dom.btnPlay) dom.btnPlay.addEventListener('click', () => toggleAutoplay(false));
+        if (dom.btnCountdown) dom.btnCountdown.addEventListener('click', cycleCountdownPreset);
+        if (dom.btnCountdownSkip) dom.btnCountdownSkip.addEventListener('click', () => beginAutoplayNow(false));
+        if (dom.btnCountdownCancel) dom.btnCountdownCancel.addEventListener('click', cancelCountdown);
 
         if (dom.btnList) dom.btnList.addEventListener('click', () => setDrawerOpen(!state.drawerOpen));
         if (dom.btnCloseDrawer) dom.btnCloseDrawer.addEventListener('click', () => setDrawerOpen(false));
@@ -1540,7 +1732,8 @@ ${nonceComment}
         document.addEventListener('fullscreenchange', syncFullscreenIcons);
         document.addEventListener('webkitfullscreenchange', syncFullscreenIcons);
 
-        // Render artefak pertama dan set zoom 100%
+        // Render artefak pertama, sinkronkan label hitung mundur & set zoom 100%
+        updateCountdownUI();
         renderCurrentArtifact(false);
         setZoom(1, false);
       }
