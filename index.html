@@ -96,7 +96,22 @@
     body.clean-view #minimal-floating-bar,
     body.clean-view #artifact-drawer,
     body.clean-view #drawer-backdrop,
-    body.clean-view #paste-modal {
+    body.clean-view #paste-modal,
+    html.is-fullscreen #top-hud,
+    body.is-fullscreen #top-hud,
+    html.is-fullscreen #minimal-floating-bar,
+    body.is-fullscreen #minimal-floating-bar,
+    html.is-fullscreen #artifact-drawer,
+    body.is-fullscreen #artifact-drawer,
+    html.is-fullscreen #drawer-backdrop,
+    body.is-fullscreen #drawer-backdrop,
+    html.is-fullscreen #paste-modal,
+    body.is-fullscreen #paste-modal,
+    html:fullscreen #top-hud,
+    html:fullscreen #minimal-floating-bar,
+    html:fullscreen #artifact-drawer,
+    html:fullscreen #drawer-backdrop,
+    html:fullscreen #paste-modal {
       display: none !important;
     }
 
@@ -1139,10 +1154,11 @@ ${nonceComment}
         // H. MODE BERSIH TANPA TOMBOL (HUD) & FULLSCREEN + FALLBACK
         // -------------------------------------------------------------------
         function applyHudVisibility() {
-          document.body.classList.toggle('clean-view', state.hudHidden);
+          const isFullscreenActive = Boolean(document.fullscreenElement) || state.pseudoFullscreen;
+          const hideControls = state.hudHidden || isFullscreenActive;
+          document.body.classList.toggle('clean-view', hideControls);
           if (dom.minimalFloatingBar) {
-            const isNativeFs = Boolean(document.fullscreenElement);
-            dom.minimalFloatingBar.classList.toggle('hidden', !state.hudHidden || isNativeFs);
+            dom.minimalFloatingBar.classList.toggle('hidden', !state.hudHidden || isFullscreenActive);
           }
         }
 
@@ -1166,6 +1182,7 @@ ${nonceComment}
           state.pseudoFullscreen = Boolean(active);
           document.documentElement.classList.toggle('is-fullscreen', state.pseudoFullscreen);
           document.body.classList.toggle('is-fullscreen', state.pseudoFullscreen);
+          applyHudVisibility();
           syncFullscreenIcons();
         }
 
