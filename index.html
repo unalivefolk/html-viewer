@@ -93,7 +93,6 @@
 
     /* Mode bersih tanpa tombol: sembunyikan seluruh kontrol/HUD */
     body.clean-view #top-hud,
-    body.clean-view #bottom-nav-bar,
     body.clean-view #minimal-floating-bar,
     body.clean-view #artifact-drawer,
     body.clean-view #drawer-backdrop,
@@ -375,86 +374,39 @@
         </button>
       </div>
     </header>
-              if (pausedFlag) {
-                rafQueue.push(cb);
-              } else {
-                cb(ts - offsetMs);
-              }
-            });
-          };
 
-          function pauseArtifactRuntime() {
-            if (pausedFlag) return;
-            pausedFlag = true;
-            pausedAt = nativePerfNow();
-            pausedAnimations = [];
-            try {
-              document.getAnimations().forEach(function (anim) {
-                if (anim.playState === 'running') {
-                  anim.pause();
-                  pausedAnimations.push(anim);
-                }
-              });
-            } catch (e) {}
-            pausedMedia = [];
-            document.querySelectorAll('video, audio').forEach(function (mediaEl) {
-              if (!mediaEl.paused) {
-                mediaEl.pause();
-                pausedMedia.push(mediaEl);
-              }
-            });
-          }
+    <!-- Area Tengah: Stage Artefak + Overlay Gestur Sentuh + Dropzone -->
+    <div id="artifact-viewport" class="relative flex-1 w-full h-full overflow-hidden flex items-center justify-center bg-obsidian">
+      <div id="artifact-zoom-stage" class="w-full h-full flex items-center justify-center">
+        <iframe
+          id="artifact-frame"
+          title="Pratinjau Artefak HTML/SVG"
+          sandbox="allow-scripts allow-forms allow-modals allow-popups allow-pointer-lock allow-downloads"
+          class="w-full h-full border-0 bg-white"
+        ></iframe>
+      </div>
 
-          function resumeArtifactRuntime() {
-            if (!pausedFlag) return;
-            offsetMs += nativePerfNow() - pausedAt;
-            pausedFlag = false;
-            pausedAnimations.forEach(function (anim) {
-              try {
-                anim.play();
-              } catch (e) {}
-            });
-            pausedMedia.forEach(function (mediaEl) {
-              mediaEl.play().catch(function () {});
-            });
-            rafQueue.splice(0).forEach(function (cb) {
-              nativeRaf(function (ts) {
-                cb(ts - offsetMs);
-    <!-- Bottom Navigation Bar Minimalis (Sebelumnya / Berikutnya) -->
-    <footer id="bottom-nav-bar" class="z-30 flex items-center justify-between gap-3 px-4 py-2 bg-surface/95 backdrop-blur-md border-t border-white/10">
-      <button
-        id="btnPrev"
-        type="button"
-        title="Artefak Sebelumnya (←)"
-        class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-elevated hover:bg-white/10 active:scale-95 text-xs font-medium text-slate-200 border border-white/10 transition cursor-pointer"
+      <!-- Overlay Gestur Sentuh (aktif saat tombol Gestur dinyalakan / tekan G) -->
+      <div
+        id="gesture-overlay"
+        class="hidden absolute inset-0 z-20 bg-violet-500/5 cursor-grab active:cursor-grabbing flex items-start justify-center pt-3 pointer-events-auto"
       >
-        <svg class="w-4 h-4 text-sky-400" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
-        </svg>
-        <span>Sebelumnya</span>
-      </button>
+        <span class="px-3 py-1 rounded-full bg-surface/90 border border-violet-400/40 text-[11px] font-medium text-violet-200 shadow-lg backdrop-blur-md">
+          Mode Gestur Aktif: Geser Kiri/Kanan · Ketuk 2 Jari (Play/Pause) · Tekan G untuk keluar
+        </span>
+      </div>
 
-      <button
-        id="btnShowHud"
-        type="button"
-        title="Tampilkan / Sembunyikan Kontrol (H)"
-        class="px-3 py-1 rounded-full bg-elevated/80 hover:bg-white/10 text-[11px] text-slate-400 border border-white/10 transition cursor-pointer"
+      <!-- Overlay Drag-and-Drop File -->
+      <div
+        id="dropzone-overlay"
+        class="hidden absolute inset-0 z-30 bg-sky-950/70 backdrop-blur-xs border-2 border-dashed border-sky-400 flex items-center justify-center p-6 pointer-events-none"
       >
-        Kontrol Aktif · Tekan H untuk mode bersih
-      </button>
-
-      <button
-        id="btnNext"
-        type="button"
-        title="Artefak Berikutnya (→)"
-        class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-elevated hover:bg-white/10 active:scale-95 text-xs font-medium text-slate-200 border border-white/10 transition cursor-pointer"
-      >
-        <span>Berikutnya</span>
-        <svg class="w-4 h-4 text-sky-400" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
-        </svg>
-      </button>
-    </footer>
+        <div class="px-6 py-4 rounded-2xl bg-surface/95 border border-sky-400/40 text-center shadow-2xl">
+          <p class="text-sm font-semibold text-sky-300">Lepaskan file .html, .htm, atau .svg di sini</p>
+          <p class="text-xs text-slate-400 mt-1">Artefak akan langsung ditambahkan ke daftar pemutar</p>
+        </div>
+      </div>
+    </div>
 
     <!-- Bar Melayang Minimal saat Mode Bersih Aktif -->
     <div id="minimal-floating-bar" class="hidden fixed bottom-4 right-4 z-40">
@@ -525,7 +477,7 @@
     </div>
 
     <!-- Container Toast & Indikator Tengah -->
-    <div id="toast-container" class="fixed bottom-16 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center gap-2 pointer-events-none"></div>
+    <div id="toast-container" class="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center gap-2 pointer-events-none"></div>
     <div id="center-action-indicator" class="fixed inset-0 z-40 flex items-center justify-center pointer-events-none hidden">
       <div id="center-action-pill" class="px-4 py-2.5 rounded-2xl bg-surface/90 border border-white/15 backdrop-blur-md flex items-center gap-2 text-xs font-semibold text-white shadow-xl">
         <span id="center-action-icon"></span>
@@ -540,6 +492,7 @@
         // -------------------------------------------------------------------
         // A. CONTOH ARTEFAK BAWAAN
         // -------------------------------------------------------------------
+        const END_SCRIPT = '</' + 'script>';
         const SAMPLE_ARTIFACTS = [
           {
             id: 'sample-particles',
@@ -679,7 +632,7 @@
 
     init();
     loop();
-  <\/script>
+  ${END_SCRIPT}
 </body>
 </html>`
           },
@@ -692,7 +645,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <script src="https://cdn.tailwindcss.com"><\/script>
+  <script src="https://cdn.tailwindcss.com">${END_SCRIPT}
 </head>
 <body class="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 text-slate-100 flex items-center justify-center p-6 font-sans">
   <div class="w-full max-w-lg rounded-3xl bg-white/5 backdrop-blur-xl border border-white/10 p-6 sm:p-8 shadow-2xl">
@@ -764,7 +717,7 @@
       statusMsg.textContent = 'Rencana ' + range.value + ' sesi fokus tersimpan di sesi pratinjau.';
     });
     update();
-  <\/script>
+  ${END_SCRIPT}
 </body>
 </html>`
           },
@@ -841,7 +794,6 @@
         const dom = {
           viewerRoot: document.getElementById('viewer-root'),
           topHud: document.getElementById('top-hud'),
-          bottomNavBar: document.getElementById('bottom-nav-bar'),
           minimalFloatingBar: document.getElementById('minimal-floating-bar'),
           artifactCounter: document.getElementById('artifact-counter'),
           activeTitle: document.getElementById('active-artifact-title'),
@@ -869,8 +821,6 @@
           btnSubmitPaste: document.getElementById('btn-submit-paste'),
 
           // Tombol-tombol utama (ID konsisten & terhubung langsung)
-          btnPrev: document.getElementById('btnPrev'),
-          btnNext: document.getElementById('btnNext'),
           btnPlay: document.getElementById('btnPlay'),
           btnList: document.getElementById('btnList'),
           btnCloseDrawer: document.getElementById('btn-close-drawer'),
@@ -889,7 +839,6 @@
           btnUpload: document.getElementById('btnUpload'),
           btnHideHud: document.getElementById('btnHideHud'),
           btnFullscreen: document.getElementById('btnFullscreen'),
-          btnShowHud: document.getElementById('btnShowHud'),
           restoreHudButtons: document.querySelectorAll('[data-restore-hud="true"]'),
           iconFsEnter: document.getElementById('icon-fs-enter'),
           iconFsExit: document.getElementById('icon-fs-exit')
@@ -1001,7 +950,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>${escapeHtml(title)}</title>
-  <script src="https://cdn.tailwindcss.com"><\/script>
+  <script src="https://cdn.tailwindcss.com">${END_SCRIPT}
 </head>
 <body class="bg-white text-slate-900 antialiased">
 ${trimmed}
@@ -1513,40 +1462,41 @@ ${nonceComment}
 
         // Drag-and-drop ke window / document
         let dragCounter = 0;
-        const onDragEnter = (e) => {
+        function handleDragEnter(e) {
           e.preventDefault();
           dragCounter += 1;
           if (dom.dropzoneOverlay) dom.dropzoneOverlay.classList.remove('hidden');
-        };
-        const onDragOver = (e) => {
+          if (homeScreenEl) homeScreenEl.classList.add('is-dragover');
+        }
+        function handleDragOver(e) {
           e.preventDefault();
-        };
-        const onDragLeave = (e) => {
+        }
+        function handleDragLeave(e) {
           e.preventDefault();
           dragCounter = Math.max(0, dragCounter - 1);
-          if (dragCounter === 0 && dom.dropzoneOverlay) {
-            dom.dropzoneOverlay.classList.add('hidden');
+          if (dragCounter === 0) {
+            if (dom.dropzoneOverlay) dom.dropzoneOverlay.classList.add('hidden');
+            if (homeScreenEl) homeScreenEl.classList.remove('is-dragover');
           }
-        };
-        const onDrop = (e) => {
+        }
+        function handleDrop(e) {
           e.preventDefault();
           dragCounter = 0;
           if (dom.dropzoneOverlay) dom.dropzoneOverlay.classList.add('hidden');
+          if (homeScreenEl) homeScreenEl.classList.remove('is-dragover');
           if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+            setHomeScreenVisible(false);
             handleUploadedFiles(e.dataTransfer.files);
           }
-        };
+        }
 
-        window.addEventListener('dragenter', onDragEnter);
-        window.addEventListener('dragover', onDragOver);
-        window.addEventListener('dragleave', onDragLeave);
-        window.addEventListener('drop', onDrop);
-        document.addEventListener('dragover', onDragOver);
-        document.addEventListener('drop', onDrop);
+        window.addEventListener('dragenter', handleDragEnter);
+        window.addEventListener('dragover', handleDragOver);
+        window.addEventListener('dragleave', handleDragLeave);
+        window.addEventListener('drop', handleDrop);
+        document.addEventListener('dragover', handleDragOver);
+        document.addEventListener('drop', handleDrop);
 
-        // -------------------------------------------------------------------
-        // K. DRAWER DAFTAR ARTEFAK
-        // -------------------------------------------------------------------
         function setDrawerOpen(open) {
           state.drawerOpen = Boolean(open);
           if (dom.drawer) {
@@ -1611,102 +1561,11 @@ ${nonceComment}
         }
 
         // -------------------------------------------------------------------
-        // L. DUKUNGAN NAVIGASI KEYBOARD LENGKAP
-        // -------------------------------------------------------------------
-        window.addEventListener('keydown', (e) => {
-          const tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : '';
-          const isEditable = tag === 'input' || tag === 'textarea' || (e.target && e.target.isContentEditable);
-
-          if (e.key === 'Escape') {
-            if (state.pasteModalOpen) {
-              setPasteModalOpen(false);
-              return;
-            }
-            if (state.drawerOpen) {
-              setDrawerOpen(false);
-              return;
-            }
-            if (state.hudHidden) {
-              setHudHidden(false, true);
-              return;
-            }
-            if (state.pseudoFullscreen) {
-              setPseudoFullscreen(false);
-              return;
-            }
-          }
-
-          if (isEditable) return;
-
-          switch (e.key) {
-            case 'ArrowRight':
-            case 'ArrowDown':
-            case 'PageDown':
-              e.preventDefault();
-              goNext(true);
-              break;
-            case 'ArrowLeft':
-            case 'ArrowUp':
-            case 'PageUp':
-              e.preventDefault();
-              goPrev(true);
-              break;
-            case ' ':
-              e.preventDefault();
-              toggleAutoplay(true);
-              break;
-            case '+':
-            case '=':
-              e.preventDefault();
-              zoomIn();
-              break;
-            case '-':
-            case '_':
-              e.preventDefault();
-              zoomOut();
-              break;
-            case '0':
-              e.preventDefault();
-              resetZoom();
-              break;
-            case 'r':
-            case 'R':
-              e.preventDefault();
-              reloadArtifact();
-              break;
-            case 'f':
-            case 'F':
-              e.preventDefault();
-              toggleFullscreen();
-              break;
-            case 'h':
-            case 'H':
-              e.preventDefault();
-              toggleHud();
-              break;
-            case 'g':
-            case 'G':
-              e.preventDefault();
-              toggleGestureMode();
-              break;
-            case 'l':
-            case 'L':
-              e.preventDefault();
-              setDrawerOpen(!state.drawerOpen);
-              break;
-            default:
-              break;
-          }
-        });
-
-        // -------------------------------------------------------------------
-        // M. PENGIKATAN EVENT SEMUA TOMBOL & INISIALISASI
-        // -------------------------------------------------------------------
         // L. DUKUNGAN NAVIGASI KEYBOARD, POSTMESSAGE & PASTE GLOBAL
         // -------------------------------------------------------------------
         let pinchStartZoom = null;
 
-        addEventListener('message', function (e) {
+        window.addEventListener('message', function (e) {
           if (!dom.frame || e.source !== dom.frame.contentWindow || !e.data || !e.data.__pl) return;
           const m = e.data.m || {};
           if (m.k) {
@@ -1735,6 +1594,9 @@ ${nonceComment}
             pinchStartZoom = null;
           } else if (m.zw) {
             setZoom(state.zoom * (m.zw < 0 ? 1.1 : 1 / 1.1), true);
+          } else if (m.files) {
+            setHomeScreenVisible(false);
+            handleUploadedFiles(m.files);
           }
         });
 
@@ -1881,30 +1743,6 @@ ${nonceComment}
           });
         }
 
-        const origDragEnter = onDragEnter;
-        const origDragLeave = onDragLeave;
-        const origDrop = onDrop;
-
-        window.removeEventListener('dragenter', origDragEnter);
-        window.removeEventListener('dragleave', origDragLeave);
-        window.removeEventListener('drop', origDrop);
-
-        window.addEventListener('dragenter', (e) => {
-          origDragEnter(e);
-          if (homeScreenEl) homeScreenEl.classList.add('is-dragover');
-        });
-        window.addEventListener('dragleave', (e) => {
-          origDragLeave(e);
-          if (dragCounter === 0 && homeScreenEl) homeScreenEl.classList.remove('is-dragover');
-        });
-        window.addEventListener('drop', (e) => {
-          if (homeScreenEl) homeScreenEl.classList.remove('is-dragover');
-          setHomeScreenVisible(false);
-          origDrop(e);
-        });
-
-        if (dom.btnPrev) dom.btnPrev.addEventListener('click', () => goPrev(false));
-        if (dom.btnNext) dom.btnNext.addEventListener('click', () => goNext(false));
         if (dom.btnPlay) dom.btnPlay.addEventListener('click', () => toggleAutoplay(false));
 
         if (dom.btnList) dom.btnList.addEventListener('click', () => setDrawerOpen(!state.drawerOpen));
@@ -1950,7 +1788,6 @@ ${nonceComment}
 
         if (dom.btnGesture) dom.btnGesture.addEventListener('click', toggleGestureMode);
         if (dom.btnHideHud) dom.btnHideHud.addEventListener('click', toggleHud);
-        if (dom.btnShowHud) dom.btnShowHud.addEventListener('click', toggleHud);
         if (dom.restoreHudButtons && dom.restoreHudButtons.length) {
           dom.restoreHudButtons.forEach((btn) => {
             btn.addEventListener('click', () => setHudHidden(false, true));
@@ -1971,6 +1808,6 @@ ${nonceComment}
         initViewerApp();
       }
     })();
-  <\/script>
+  </script>
 </body>
 </html>
